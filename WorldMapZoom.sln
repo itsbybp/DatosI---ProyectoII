@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldMapZoom", "WorldMapZoom.csproj", "{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {24D7E406-D780-4DD0-A192-9FEF15B4ECDB}
+	EndGlobalSection
+EndGlobal

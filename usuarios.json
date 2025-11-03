@@ -1,0 +1,233 @@
+{
+  "people": [
+    {
+      "id": "p01",
+      "name": "Jorge González",
+      "national_id": "1-0333-0987",
+      "birth_date": "1960-02-14",
+      "alive": true,
+      "age": 65,
+      "photo_url": "https://randomuser.me/api/portraits/men/21.jpg",
+      "location": {
+        "lat": 10.212,
+        "lng": -83.787,
+        "address": "Guápiles, Costa Rica"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["p02"],
+        "children": ["p03"]
+      }
+    },
+    {
+      "id": "p02",
+      "name": "Ana González",
+      "national_id": "1-0456-7890",
+      "birth_date": "1962-07-30",
+      "alive": true,
+      "age": 63,
+      "photo_url": "https://randomuser.me/api/portraits/women/21.jpg",
+      "location": {
+        "lat": 10.017953,
+        "lng": -84.214676,
+        "address": "Heredia, Costa Rica"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["p01"],
+        "children": ["p03"]
+      }
+    },
+    {
+      "id": "p03",
+      "name": "María González",
+      "national_id": "1-1012-0345",
+      "birth_date": "1988-04-12",
+      "alive": true,
+      "age": 37,
+      "photo_url": "https://randomuser.me/api/portraits/women/10.jpg",
+      "location": {
+        "lat": 9.9280694,
+        "lng": -84.0907246,
+        "address": "San José, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p01", "p02"],
+        "spouses": ["p04"],
+        "children": ["p07", "p08"]
+      }
+    },
+    {
+      "id": "p04",
+      "name": "Carlos Vega",
+      "national_id": "1-0890-1123",
+      "birth_date": "1986-09-09",
+      "alive": true,
+      "age": 39,
+      "photo_url": "https://randomuser.me/api/portraits/men/11.jpg",
+      "location": {
+        "lat": 9.862231,
+        "lng": -83.912507,
+        "address": "Cartago, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p05", "p06"],
+        "spouses": ["p03"],
+        "children": ["p07", "p08"]
+      }
+    },
+    {
+      "id": "p05",
+      "name": "Ricardo Vega",
+      "national_id": "1-0666-1111",
+      "birth_date": "1962-03-18",
+      "alive": true,
+      "age": 63,
+      "photo_url": "https://randomuser.me/api/portraits/men/31.jpg",
+      "location": {
+        "lat": 9.97673,
+        "lng": -84.83839,
+        "address": "Puntarenas, Costa Rica"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["p06"],
+        "children": ["p04"]
+      }
+    },
+    {
+      "id": "p06",
+      "name": "Laura Rojas",
+      "national_id": "1-0555-2222",
+      "birth_date": "1965-11-05",
+      "alive": true,
+      "age": 59,
+      "photo_url": "https://randomuser.me/api/portraits/women/31.jpg",
+      "location": {
+        "lat": 10.632,
+        "lng": -85.437,
+        "address": "Liberia, Costa Rica"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["p05"],
+        "children": ["p04"]
+      }
+    },
+    {
+      "id": "p07",
+      "name": "Sofía Vega",
+      "national_id": "1-1234-5678",
+      "birth_date": "2012-05-03",
+      "alive": true,
+      "age": 13,
+      "photo_url": "https://randomuser.me/api/portraits/women/65.jpg",
+      "location": {
+        "lat": 10.015,
+        "lng": -84.214,
+        "address": "Heredia, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p03", "p04"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "p08",
+      "name": "Diego Vega",
+      "national_id": "1-8765-4321",
+      "birth_date": "2016-01-22",
+      "alive": true,
+      "age": 9,
+      "photo_url": "https://randomuser.me/api/portraits/men/65.jpg",
+      "location": {
+        "lat": 9.976,
+        "lng": -84.005,
+        "address": "Heredia, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p03", "p04"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "p09",
+      "name": "Elena Vargas",
+      "national_id": "2-1010-2020",
+      "birth_date": "1992-12-01",
+      "alive": true,
+      "age": 32,
+      "photo_url": "https://randomuser.me/api/portraits/women/41.jpg",
+      "location": {
+        "lat": 9.995,
+        "lng": -84.117,
+        "address": "Alajuela, Costa Rica"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["p10"],
+        "children": ["p11"]
+      }
+    },
+    {
+      "id": "p10",
+      "name": "Tomás Herrera",
+      "national_id": "3-2020-3030",
+      "birth_date": "1990-06-10",
+      "death_date": "2018-12-15",
+      "alive": false,
+      "age": 28,
+      "photo_url": "https://randomuser.me/api/portraits/men/41.jpg",
+      "location": {
+        "lat": 9.953,
+        "lng": -83.679,
+        "address": "Turrialba, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p01", "p02"],
+        "spouses": ["p09"],
+        "children": ["p11"]
+      }
+    },
+    {
+      "id": "p11",
+      "name": "Lucía Herrera",
+      "national_id": "4-3030-4040",
+      "birth_date": "2015-08-20",
+      "alive": true,
+      "age": 10,
+      "photo_url": "https://randomuser.me/api/portraits/women/52.jpg",
+      "location": {
+        "lat": 9.639,
+        "lng": -82.94,
+        "address": "Limón, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p09", "p10"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "p12",
+      "name": "André Pérez",
+      "national_id": "5-4040-5050",
+      "birth_date": "1993-03-02",
+      "alive": true,
+      "age": 32,
+      "photo_url": "https://randomuser.me/api/portraits/men/52.jpg",
+      "location": {
+        "lat": 9.935,
+        "lng": -84.142,
+        "address": "Escazú, Costa Rica"
+      },
+      "relations": {
+        "parents": ["p05", "p06"],
+        "spouses": [],
+        "children": []
+      }
+    }
+  ]
+}
