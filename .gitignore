@@ -1,0 +1,120 @@
+## --- Construcción estándar .NET / Visual Studio ---
+bin/
+obj/
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+[Ll]ogfile.txt
+*.log
+
+## Configuraciones por-usuario / caches IDE
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+# ReSharper / Rider settings por usuario
+*.DotSettings.user
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+## --- Modos de compilación ---
+Debug*/
+Release*/
+x64/
+x86/
+ARM*/
+ARM64*/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+## --- Artefactos de publicación / empaquetado ---
+*.nupkg
+*.snupkg
+*.nuspec
+*.bak
+*.cache
+*.tmp
+*.svclog
+*.pidb
+*.ilk
+*.pdb
+*.obj
+*.pch
+*.ipch
+
+# Publicaciones locales
+[Pp]ublish*/
+*.Publish.xml
+
+## --- Pruebas, cobertura y benchmarking ---
+TestResult*/
+TestResults/
+*.coverage
+*.coveragexml
+coverage/
+coverage*.json
+.coverage
+BenchmarkDotNet.Artifacts/
+
+## --- NuGet / Paket ---
+# Carpeta packages para proyectos legacy (mantén packages.config bajo control)
+packages/
+!packages/*/build/
+.nuget/
+project.lock.json
+# Paket
+.paket/
+paket-files/
+
+## --- ASP.NET/ASP.NET Core ---
+# Archivos generados/estáticos
+wwwroot/lib/
+# Secretos y configuraciones por ambiente
+appsettings.*.json
+!appsettings.json
+secrets.json
+
+## --- Entity Framework / Migrations ---
+*_i.c
+*_p.c
+*_h.h
+
+## --- Herramientas comunes frontend en soluciones .NET ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+# Construcciones front
+dist/
+build/
+
+## --- Archivos del sistema / editor ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## --- Archivos de análisis/formatters opcionales ---
+StyleCopReport.xml
+
+## --- Otros (opcional) ---
+# Directorios temporales
+[Tt]emp/
+~$*
+*.orig
+*.rej
+
+# Rider caches adicionales
+/.idea/.fleet/
