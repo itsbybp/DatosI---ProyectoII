@@ -4,10 +4,21 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <StartWorkingDirectory>$(MSBuildProjectDirectory)</StartWorkingDirectory>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Suprimir advertencias de plataforma para aplicación Windows Forms -->
+    <NoWarn>$(NoWarn);CA1416;MSB3277;MSB3243;MSB3245;NU1603</NoWarn>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3537.50" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+  </ItemGroup>
+
+  <!-- Resolución explícita de dependencias conflictivas -->
+  <ItemGroup>
+    <PackageReference Include="System.Windows.Extensions" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

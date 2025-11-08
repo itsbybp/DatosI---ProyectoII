@@ -114,7 +114,7 @@ namespace WorldMapZoom
 
         private string GetUsersJson()
         {
-            var jsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "usuarios.json");
+            var jsonPath = DataLoader.GetDefaultJsonPath();
             if (!File.Exists(jsonPath))
             {
                 MessageBox.Show($"No se encontró el archivo usuarios.json en: {jsonPath}");
