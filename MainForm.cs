@@ -12,6 +12,7 @@ namespace WorldMapZoom
         private WebView2 _webView;
         private Panel _sidePanel;
         private Button _btnAddPerson;
+        private Button _btnDeletePerson;
         private Button _btnViewTree;
         private Button _btnStatistics;
         private Button _btnMarkDeceased;
@@ -41,7 +42,7 @@ namespace WorldMapZoom
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al cargar datos iniciales: {ex.Message}", "Advertencia", 
+                MessageBox.Show($"Error al cargar datos iniciales: {ex.Message}", "Advertencia",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
@@ -88,22 +89,27 @@ namespace WorldMapZoom
 
             int yPosition = 100;
 
-            _btnAddPerson = CreateStyledButton("➕ Agregar Persona", yPosition);
+            _btnAddPerson = CreateStyledButton("➕ Agregar Persona", yPosition, Color.FromArgb(46, 204, 113));
             _btnAddPerson.Click += BtnAddPerson_Click;
             _sidePanel.Controls.Add(_btnAddPerson);
             yPosition += 60;
 
-            _btnMarkDeceased = CreateStyledButton("💀 Marcar Fallecido", yPosition);
+            _btnDeletePerson = CreateStyledButton("🗑️ Eliminar Persona", yPosition, Color.FromArgb(192, 57, 43));
+            _btnDeletePerson.Click += BtnDeletePerson_Click;
+            _sidePanel.Controls.Add(_btnDeletePerson);
+            yPosition += 60;
+
+            _btnMarkDeceased = CreateStyledButton("💀 Marcar Fallecido", yPosition, Color.FromArgb(149, 165, 166));
             _btnMarkDeceased.Click += BtnMarkDeceased_Click;
             _sidePanel.Controls.Add(_btnMarkDeceased);
             yPosition += 60;
 
-            _btnViewTree = CreateStyledButton("🌳 Ver Árbol Familiar", yPosition);
+            _btnViewTree = CreateStyledButton("🌳 Ver Árbol Familiar", yPosition, Color.FromArgb(52, 152, 219));
             _btnViewTree.Click += BtnViewTree_Click;
             _sidePanel.Controls.Add(_btnViewTree);
             yPosition += 60;
 
-            _btnStatistics = CreateStyledButton("📊 Estadísticas", yPosition);
+            _btnStatistics = CreateStyledButton("📊 Estadísticas", yPosition, Color.FromArgb(155, 89, 182));
             _btnStatistics.Click += BtnStatistics_Click;
             _sidePanel.Controls.Add(_btnStatistics);
 
@@ -114,7 +120,7 @@ namespace WorldMapZoom
             Controls.Add(_webView);
         }
 
-        private Button CreateStyledButton(string text, int yPosition)
+        private Button CreateStyledButton(string text, int yPosition, Color? customColor = null)
         {
             var button = new Button
             {
@@ -122,13 +128,18 @@ namespace WorldMapZoom
                 Location = new Point(20, yPosition),
                 Size = new Size(210, 45),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(0, 122, 204),
+                BackColor = customColor ?? Color.FromArgb(0, 122, 204),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11, FontStyle.Regular),
                 Cursor = Cursors.Hand
             };
             button.FlatAppearance.BorderSize = 0;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(28, 151, 234);
+
+            // Efecto hover
+            Color hoverColor = ControlPaint.Light(customColor ?? Color.FromArgb(0, 122, 204), 0.2f);
+            button.MouseEnter += (s, e) => button.BackColor = hoverColor;
+            button.MouseLeave += (s, e) => button.BackColor = customColor ?? Color.FromArgb(0, 122, 204);
+
             return button;
         }
 
@@ -137,7 +148,7 @@ namespace WorldMapZoom
             try
             {
                 await _webView.EnsureCoreWebView2Async(null);
-                
+
                 if (_webView.CoreWebView2 != null)
                 {
                     _webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
@@ -146,7 +157,7 @@ namespace WorldMapZoom
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al inicializar WebView2: {ex.Message}\n\nAsegúrate de tener WebView2 Runtime instalado.", 
+                MessageBox.Show($"Error al inicializar WebView2: {ex.Message}\n\nAsegúrate de tener WebView2 Runtime instalado.",
                     "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -156,7 +167,7 @@ namespace WorldMapZoom
             try
             {
                 string message = e.TryGetWebMessageAsString();
-                
+
                 if (message.StartsWith("person:"))
                 {
                     string personId = message.Substring(7);
@@ -173,11 +184,11 @@ namespace WorldMapZoom
         {
             var graph = _familyTree.GetGraph();
             var person = graph.GetPerson(personId);
-            
+
             if (person == null) return;
 
             var distances = graph.GetDistancesFrom(personId);
-            
+
             var script = new StringBuilder();
             script.AppendLine("if (window.distanceLines) {");
             script.AppendLine("  window.distanceLines.forEach(line => map.removeLayer(line));");
@@ -191,7 +202,7 @@ namespace WorldMapZoom
                 var otherPerson = graph.GetPerson(kvp.Key);
                 if (otherPerson != null)
                 {
-                    script.AppendLine($"var line = L.polyline([[{person.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {person.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}], [{otherPerson.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}, {otherPerson.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}]], {{");
+                    script.AppendLine($"var line = L.polyline([[{person.Latitude}, {person.Longitude}], [{otherPerson.Latitude}, {otherPerson.Longitude}]], {{");
                     script.AppendLine("  color: 'red',");
                     script.AppendLine("  weight: 2,");
                     script.AppendLine("  opacity: 0.7,");
@@ -215,6 +226,23 @@ namespace WorldMapZoom
             }
         }
 
+        private void BtnDeletePerson_Click(object sender, EventArgs e)
+        {
+            if (_familyTree.GetAllMembers().Count == 0)
+            {
+                MessageBox.Show("No hay personas para eliminar en el árbol genealógico.",
+                    "Árbol vacío", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var deleteForm = new DeletePersonForm(_familyTree);
+            if (deleteForm.ShowDialog() == DialogResult.OK)
+            {
+                RefreshMap();
+                _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} miembros";
+            }
+        }
+
         private void BtnMarkDeceased_Click(object sender, EventArgs e)
         {
             var markDeceasedForm = new MarkDeceasedForm(_familyTree);
@@ -228,7 +256,7 @@ namespace WorldMapZoom
         {
             if (_familyTree.GetAllMembers().Count == 0)
             {
-                MessageBox.Show("No hay miembros en el árbol genealógico.", "Árbol vacío", 
+                MessageBox.Show("No hay miembros en el árbol genealógico.", "Árbol vacío",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -240,7 +268,7 @@ namespace WorldMapZoom
         {
             if (_familyTree.GetAllMembers().Count < 2)
             {
-                MessageBox.Show("Se necesitan al menos 2 personas para calcular estadísticas.", 
+                MessageBox.Show("Se necesitan al menos 2 personas para calcular estadísticas.",
                     "Datos insuficientes", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -271,14 +299,14 @@ namespace WorldMapZoom
             sb.AppendLine("</head><body><div id='map'></div>");
             sb.AppendLine("<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>");
             sb.AppendLine("<script>");
-            
+
             sb.AppendLine("var users = " + GetUsersJsonFromTree() + ";");
-            
+
             sb.AppendLine("var map = L.map('map').setView([9.935, -84.091], 8);");
             sb.AppendLine("L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {");
             sb.AppendLine("  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'");
             sb.AppendLine("}).addTo(map);");
-            
+
             sb.AppendLine("function getPhotoSize(zoom) {");
             sb.AppendLine("  if (zoom < 6) return 20;");
             sb.AppendLine("  if (zoom < 8) return 30;");
@@ -287,7 +315,7 @@ namespace WorldMapZoom
             sb.AppendLine("  if (zoom < 14) return 60;");
             sb.AppendLine("  return 80;");
             sb.AppendLine("}");
-            
+
             sb.AppendLine("var markers = [];");
             sb.AppendLine("var selectedPersonId = null;");
             sb.AppendLine("users.forEach(function(user) {");
@@ -306,7 +334,7 @@ namespace WorldMapZoom
             sb.AppendLine("    .addTo(map);");
             sb.AppendLine("  markers.push({marker: marker, user: user});");
             sb.AppendLine("});");
-            
+
             sb.AppendLine("map.on('zoomend', function() {");
             sb.AppendLine("  var size = getPhotoSize(map.getZoom());");
             sb.AppendLine("  markers.forEach(function(m) {");
@@ -319,7 +347,7 @@ namespace WorldMapZoom
             sb.AppendLine("    m.marker.setIcon(icon);");
             sb.AppendLine("  });");
             sb.AppendLine("});");
-            
+
             sb.AppendLine("function selectPerson(personId) {");
             sb.AppendLine("  if (selectedPersonId === personId) {");
             sb.AppendLine("    if (window.distanceLines) {");
@@ -332,7 +360,7 @@ namespace WorldMapZoom
             sb.AppendLine("    window.chrome.webview.postMessage('person:' + personId);");
             sb.AppendLine("  }");
             sb.AppendLine("}");
-            
+
             sb.AppendLine("</script></body></html>");
             return sb.ToString();
         }
@@ -345,12 +373,12 @@ namespace WorldMapZoom
 
             var sb = new StringBuilder();
             sb.Append("[");
-            
+
             for (int i = 0; i < members.Count; i++)
             {
                 var person = members[i];
                 if (i > 0) sb.Append(",");
-                
+
                 sb.Append("{");
                 sb.AppendFormat("\"id\":\"{0}\",", EscapeJson(person.Id));
                 sb.AppendFormat("\"name\":\"{0}\",", EscapeJson(person.FullName));
@@ -363,7 +391,7 @@ namespace WorldMapZoom
                 sb.AppendFormat("\"alive\":{0}", person.IsAlive.ToString().ToLower());
                 sb.Append("}");
             }
-            
+
             sb.Append("]");
             return sb.ToString();
         }
