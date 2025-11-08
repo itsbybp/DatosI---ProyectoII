@@ -555,7 +555,9 @@
                     "gen2-esposo-camila"
                 ],
                 "spouses": [],
-                "children": []
+                "children": [
+                    "fa33e130-dd91-4b3b-af1e-fc7f539f489e"
+                ]
             }
         },
         {
@@ -575,6 +577,27 @@
                 "parents": [
                     "gen2-hijo3-laura",
                     "gen2-esposa-sebastian"
+                ],
+                "spouses": [],
+                "children": []
+            }
+        },
+        {
+            "id": "fa33e130-dd91-4b3b-af1e-fc7f539f489e",
+            "name": "Richard Watterson Lol",
+            "national_id": "123450000",
+            "birth_date": "2025-11-08",
+            "alive": true,
+            "age": 0,
+            "photo_url": "https://randomuser.me/api/portraits/men/1.jpg",
+            "location": {
+                "lat": 9.6,
+                "lng": -84.091,
+                "address": "San José"
+            },
+            "relations": {
+                "parents": [
+                    "gen3-hija2-camila"
                 ],
                 "spouses": [],
                 "children": []

@@ -13,7 +13,24 @@ namespace WorldMapZoom
 
         public static string GetDefaultJsonPath()
         {
-            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "usuarios.json");
+            // Obtener el directorio del proyecto (subir desde bin/Debug/net8.0-windows/ hasta el directorio raíz)
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            
+            // Buscar hacia arriba hasta encontrar el directorio que contenga usuarios.json
+            DirectoryInfo current = new DirectoryInfo(baseDir);
+            while (current != null && current.Parent != null)
+            {
+                string jsonPath = Path.Combine(current.FullName, "usuarios.json");
+                if (File.Exists(jsonPath))
+                {
+                    return jsonPath;
+                }
+                current = current.Parent;
+            }
+            
+            // Si no se encuentra, intentar con una ruta relativa desde el directorio base
+            string fallbackPath = Path.Combine(baseDir, "..", "..", "..", "usuarios.json");
+            return Path.GetFullPath(fallbackPath);
         }
 
         public static void SetCurrentFilePath(string path)
