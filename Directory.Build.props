@@ -1,0 +1,7 @@
+<Project>
+  <!-- Configurar directorios de salida en temporal -->
+  <PropertyGroup>
+    <BaseOutputPath>$(TEMP)\WorldMapZoom_Build\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(TEMP)\WorldMapZoom_Build\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
