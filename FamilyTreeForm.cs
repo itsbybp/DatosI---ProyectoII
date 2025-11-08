@@ -1,578 +1,609 @@
 using System;
-using System.Drawing;
-using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace WorldMapZoom
 {
     public partial class FamilyTreeForm : Form
     {
         private FamilyTree _familyTree;
-        private Panel _scrollPanel;
-        private PictureBox _drawBox;
-        private Dictionary<string, PointF> _nodePositions;
-        private Dictionary<string, int> _personLevels;
-        private const int NODE_WIDTH = 200;
-        private const int NODE_HEIGHT = 110;
-        private const int H_SPACING = 80;
-        private const int V_SPACING = 180;
-        private const int MARGIN = 50;
-        private const int COUPLE_SPACING = 40;
+        private Panel _drawBox, _sidePanel;
+        private Dictionary<string, PointF> _nodePositions = new Dictionary<string, PointF>();
+        private Dictionary<string, int> _generations = new Dictionary<string, int>();
+        private Dictionary<string, Image> _photoCache = new Dictionary<string, Image>();
+        private Person _selectedPerson;
+
+        // Zoom y Pan
+        private float _zoomLevel = 1.0f;
+        private const float MIN_ZOOM = 0.1f, MAX_ZOOM = 3.0f, ZOOM_STEP = 0.1f;
+        private PointF _panOffset = new PointF(0, 0);
+        private Point _lastMousePos;
+        private bool _isPanning = false;
+
+        // Constantes de diseño
+        private const float BUBBLE_DIAMETER = 100f, HORIZONTAL_SPACING = 150f, VERTICAL_SPACING = 280f;
+        private const float COUPLE_SPACING = 50f, FAMILY_GROUP_SPACING = 250f, MARGIN = 150f;
 
         public FamilyTreeForm(FamilyTree familyTree)
         {
             _familyTree = familyTree;
-            _nodePositions = new Dictionary<string, PointF>();
-            _personLevels = new Dictionary<string, int>();
             InitializeComponent();
-            InitializeUI();
+            InitializeCustomComponents();
+            CalculateGenerationsFixed();
+            CalculatePositionsImproved();
         }
 
-        private void InitializeUI()
+        private void InitializeCustomComponents()
         {
-            Text = "Árbol Genealógico";
-            Width = 1600;
-            Height = 900;
-            StartPosition = FormStartPosition.CenterParent;
-            WindowState = FormWindowState.Maximized;
-            BackColor = Color.FromArgb(245, 245, 245);
+            this.Text = "Árbol Genealógico - Usa rueda del mouse para zoom";
+            this.WindowState = FormWindowState.Maximized;
+            this.BackColor = Color.FromArgb(245, 245, 250);
 
-            var headerPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.FromArgb(0, 122, 204)
-            };
-            Controls.Add(headerPanel);
+            _drawBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            _drawBox.GetType().InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, _drawBox, new object[] { true });
 
-            var titleLabel = new Label
-            {
-                Text = "🌳 ÁRBOL GENEALÓGICO FAMILIAR",
-                Font = new Font("Segoe UI", 22, FontStyle.Bold),
-                ForeColor = Color.White,
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-            headerPanel.Controls.Add(titleLabel);
-
-            _scrollPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                AutoScroll = true,
-                BackColor = Color.White
-            };
-            Controls.Add(_scrollPanel);
-
-            _drawBox = new PictureBox
-            {
-                BackColor = Color.White,
-                Location = new Point(0, 0)
-            };
             _drawBox.Paint += DrawBox_Paint;
-            _scrollPanel.Controls.Add(_drawBox);
+            _drawBox.MouseClick += DrawBox_MouseClick;
+            _drawBox.MouseWheel += DrawBox_MouseWheel;
+            _drawBox.MouseDown += DrawBox_MouseDown;
+            _drawBox.MouseMove += DrawBox_MouseMove;
+            _drawBox.MouseUp += DrawBox_MouseUp;
 
-            CalculatePositions();
+            _sidePanel = new Panel
+            {
+                Dock = DockStyle.Right,
+                Width = 350,
+                BackColor = Color.FromArgb(248, 249, 250),
+                Visible = false,
+                Padding = new Padding(10),
+                AutoScroll = true
+            };
+
+            this.Controls.AddRange(new Control[] { _drawBox, _sidePanel });
         }
 
-        private void CalculatePositions()
+        private void DrawBox_MouseWheel(object sender, MouseEventArgs e)
         {
-            _nodePositions.Clear();
-            _personLevels.Clear();
-            
-            var roots = _familyTree.GetRootMembers().OrderBy(p => p.BirthDate).ToList();
-            
-            if (roots.Count == 0)
+            float oldZoom = _zoomLevel;
+            _zoomLevel = Math.Max(MIN_ZOOM, Math.Min(MAX_ZOOM, _zoomLevel + (e.Delta > 0 ? ZOOM_STEP : -ZOOM_STEP)));
+
+            if (_zoomLevel != oldZoom)
             {
-                _drawBox.Size = new Size(1000, 500);
-                return;
+                float zoomFactor = _zoomLevel / oldZoom;
+                _panOffset.X = e.X - (e.X - _panOffset.X) * zoomFactor;
+                _panOffset.Y = e.Y - (e.Y - _panOffset.Y) * zoomFactor;
             }
-
-            // PASO 1: Asignar niveles generacionales
-            foreach (var root in roots)
-            {
-                AssignLevels(root, 0, new HashSet<string>());
-            }
-
-            // PASO 2: Organizar por niveles
-            var levels = new Dictionary<int, List<Person>>();
-            foreach (var person in _familyTree.GetAllMembers())
-            {
-                if (_personLevels.ContainsKey(person.Id))
-                {
-                    int level = _personLevels[person.Id];
-                    if (!levels.ContainsKey(level))
-                        levels[level] = new List<Person>();
-                    levels[level].Add(person);
-                }
-            }
-
-            int maxLevel = levels.Keys.Count > 0 ? levels.Keys.Max() : 0;
-
-            // PASO 3: Posicionar de abajo hacia arriba para mejor distribución
-            for (int level = maxLevel; level >= 0; level--)
-            {
-                if (!levels.ContainsKey(level)) continue;
-                
-                if (level == maxLevel)
-                {
-                    // Última generación: posición simple de izquierda a derecha
-                    PositionBottomLevel(level, levels[level]);
-                }
-                else
-                {
-                    // Generaciones superiores: centrar sobre hijos
-                    PositionParentLevel(level, levels[level]);
-                }
-            }
-
-            // PASO 4: Eliminar todas las superposiciones
-            for (int iteration = 0; iteration < 3; iteration++)
-            {
-                for (int level = 0; level <= maxLevel; level++)
-                {
-                    if (!levels.ContainsKey(level)) continue;
-                    FixOverlapsInLevel(level, levels[level]);
-                }
-            }
-
-            // Ajustar canvas
-            if (_nodePositions.Count > 0)
-            {
-                float maxX = _nodePositions.Values.Max(p => p.X) + NODE_WIDTH + MARGIN;
-                float maxY = _nodePositions.Values.Max(p => p.Y) + NODE_HEIGHT + MARGIN;
-                _drawBox.Size = new Size((int)maxX, (int)maxY);
-            }
-
             _drawBox.Invalidate();
         }
 
-        private void AssignLevels(Person person, int level, HashSet<string> visited)
+        private void DrawBox_MouseDown(object sender, MouseEventArgs e)
         {
-            if (visited.Contains(person.Id))
-                return;
-
-            visited.Add(person.Id);
-
-            if (!_personLevels.ContainsKey(person.Id))
-                _personLevels[person.Id] = level;
-            else
-                _personLevels[person.Id] = Math.Min(_personLevels[person.Id], level);
-
-            // Asignar mismo nivel a cónyuges
-            var spouses = _familyTree.GetSpouses(person.Id);
-            foreach (var spouse in spouses)
+            if (e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
             {
-                if (!_personLevels.ContainsKey(spouse.Id))
-                    _personLevels[spouse.Id] = level;
-            }
-
-            // Hijos van al siguiente nivel
-            var children = _familyTree.GetChildren(person.Id);
-            foreach (var child in children)
-            {
-                AssignLevels(child, level + 1, visited);
+                _isPanning = true;
+                _lastMousePos = e.Location;
+                _drawBox.Cursor = Cursors.SizeAll;
             }
         }
 
-        private void PositionBottomLevel(int level, List<Person> persons)
+        private void DrawBox_MouseMove(object sender, MouseEventArgs e)
         {
-            float y = MARGIN + (level * V_SPACING);
-            float x = MARGIN;
-            var processed = new HashSet<string>();
-
-            var sorted = persons.OrderBy(p => p.BirthDate).ToList();
-
-            foreach (var person in sorted)
+            if (_isPanning)
             {
-                if (processed.Contains(person.Id)) continue;
-
-                var spouses = _familyTree.GetSpouses(person.Id)
-                    .Where(s => _personLevels.ContainsKey(s.Id) && _personLevels[s.Id] == level && !processed.Contains(s.Id))
-                    .ToList();
-
-                if (spouses.Count > 0)
-                {
-                    var spouse = spouses[0];
-                    _nodePositions[person.Id] = new PointF(x, y);
-                    _nodePositions[spouse.Id] = new PointF(x + NODE_WIDTH + COUPLE_SPACING, y);
-                    processed.Add(person.Id);
-                    processed.Add(spouse.Id);
-                    x += NODE_WIDTH * 2 + COUPLE_SPACING + H_SPACING;
-                }
-                else
-                {
-                    _nodePositions[person.Id] = new PointF(x, y);
-                    processed.Add(person.Id);
-                    x += NODE_WIDTH + H_SPACING;
-                }
+                _panOffset.X += e.X - _lastMousePos.X;
+                _panOffset.Y += e.Y - _lastMousePos.Y;
+                _lastMousePos = e.Location;
+                _drawBox.Invalidate();
             }
         }
 
-        private void PositionParentLevel(int level, List<Person> persons)
+        private void DrawBox_MouseUp(object sender, MouseEventArgs e)
         {
-            float y = MARGIN + (level * V_SPACING);
-            var processed = new HashSet<string>();
-
-            // Agrupar padres con sus hijos
-            var parentGroups = new List<ParentGroup>();
-
-            foreach (var person in persons)
+            if (e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
             {
-                if (processed.Contains(person.Id)) continue;
-
-                var children = _familyTree.GetChildren(person.Id)
-                    .Where(c => _personLevels.ContainsKey(c.Id) && 
-                               _personLevels[c.Id] == level + 1 &&
-                               _nodePositions.ContainsKey(c.Id))
-                    .ToList();
-
-                if (children.Count == 0) continue;
-
-                var spouse = _familyTree.GetSpouses(person.Id)
-                    .FirstOrDefault(s => _personLevels.ContainsKey(s.Id) && _personLevels[s.Id] == level);
-
-                var group = new ParentGroup
-                {
-                    Parent1 = person,
-                    Parent2 = spouse,
-                    Children = children
-                };
-
-                parentGroups.Add(group);
-                processed.Add(person.Id);
-                if (spouse != null) processed.Add(spouse.Id);
-            }
-
-            // Ordenar grupos por posición de hijos
-            parentGroups = parentGroups.OrderBy(g => g.Children.Min(c => _nodePositions[c.Id].X)).ToList();
-
-            // Posicionar cada grupo de padres
-            foreach (var group in parentGroups)
-            {
-                var childPositions = group.Children.Select(c => _nodePositions[c.Id].X).OrderBy(x => x).ToList();
-                float leftChildX = childPositions.First();
-                float rightChildX = childPositions.Last();
-                float centerX = (leftChildX + rightChildX) / 2;
-
-                if (group.Parent2 != null)
-                {
-                    // Pareja: centrar sobre hijos
-                    float totalWidth = NODE_WIDTH * 2 + COUPLE_SPACING;
-                    float startX = centerX - totalWidth / 2;
-                    _nodePositions[group.Parent1.Id] = new PointF(startX, y);
-                    _nodePositions[group.Parent2.Id] = new PointF(startX + NODE_WIDTH + COUPLE_SPACING, y);
-                }
-                else
-                {
-                    // Padre/madre soltero: centrar directamente
-                    _nodePositions[group.Parent1.Id] = new PointF(centerX - NODE_WIDTH / 2, y);
-                }
-            }
-
-            // Posicionar personas sin hijos
-            float x = MARGIN;
-            if (parentGroups.Count > 0)
-            {
-                x = _nodePositions.Values.Where(p => Math.Abs(p.Y - y) < 1).Max(p => p.X) + NODE_WIDTH + H_SPACING;
-            }
-
-            foreach (var person in persons)
-            {
-                if (processed.Contains(person.Id)) continue;
-
-                var spouse = _familyTree.GetSpouses(person.Id)
-                    .FirstOrDefault(s => _personLevels.ContainsKey(s.Id) && 
-                                       _personLevels[s.Id] == level && 
-                                       !processed.Contains(s.Id));
-
-                if (spouse != null)
-                {
-                    _nodePositions[person.Id] = new PointF(x, y);
-                    _nodePositions[spouse.Id] = new PointF(x + NODE_WIDTH + COUPLE_SPACING, y);
-                    processed.Add(person.Id);
-                    processed.Add(spouse.Id);
-                    x += NODE_WIDTH * 2 + COUPLE_SPACING + H_SPACING;
-                }
-                else
-                {
-                    _nodePositions[person.Id] = new PointF(x, y);
-                    processed.Add(person.Id);
-                    x += NODE_WIDTH + H_SPACING;
-                }
+                _isPanning = false;
+                _drawBox.Cursor = Cursors.Default;
             }
         }
 
-        private void FixOverlapsInLevel(int level, List<Person> persons)
+        private void CalculateGenerationsFixed()
         {
-            var nodesInLevel = persons
-                .Where(p => _nodePositions.ContainsKey(p.Id))
-                .Select(p => new { Person = p, Pos = _nodePositions[p.Id] })
-                .Where(x => Math.Abs(x.Pos.Y - (MARGIN + level * V_SPACING)) < 10)
-                .OrderBy(x => x.Pos.X)
-                .ToList();
+            _generations.Clear();
+            var allMembers = _familyTree.GetAllMembers();
+            if (allMembers.Count == 0) return;
 
-            for (int i = 1; i < nodesInLevel.Count; i++)
+            Console.WriteLine($"=== CALCULANDO GENERACIONES ===\nTotal personas: {allMembers.Count}");
+
+            var potentialFounders = allMembers.Where(p => p.ParentIds == null || p.ParentIds.Count == 0).ToList();
+            var explicitFounders = potentialFounders.Where(p => p.Id.Contains("gen0")).ToList();
+            var trueFounders = explicitFounders.Count > 0 ? explicitFounders : potentialFounders.OrderBy(p => p.BirthDate).Take(2).ToList();
+
+            foreach (var founder in trueFounders)
             {
-                var prev = nodesInLevel[i - 1];
-                var curr = nodesInLevel[i];
+                _generations[founder.Id] = 0;
+                Console.WriteLine($"Gen 0: {founder.FullName}");
 
-                float minDistance = NODE_WIDTH + H_SPACING;
-                float currentDistance = curr.Pos.X - prev.Pos.X;
-
-                if (currentDistance < minDistance)
+                if (founder.SpouseIds != null)
                 {
-                    float shift = minDistance - currentDistance;
-                    var newPos = new PointF(curr.Pos.X + shift, curr.Pos.Y);
-                    _nodePositions[curr.Person.Id] = newPos;
-                    
-                    // Actualizar nodos siguientes
-                    for (int j = i + 1; j < nodesInLevel.Count; j++)
+                    foreach (var spouseId in founder.SpouseIds.Where(sid => !_generations.ContainsKey(sid)))
                     {
-                        var next = nodesInLevel[j];
-                        var nextPos = _nodePositions[next.Person.Id];
-                        _nodePositions[next.Person.Id] = new PointF(nextPos.X + shift, nextPos.Y);
+                        _generations[spouseId] = 0;
+                        Console.WriteLine($"Gen 0: {_familyTree.GetPerson(spouseId)?.FullName} (cónyuge)");
                     }
                 }
             }
+
+            bool changed = true;
+            for (int iter = 0; iter < 20 && changed; iter++)
+            {
+                changed = false;
+                foreach (var person in allMembers.Where(p => !_generations.ContainsKey(p.Id) && p.ParentIds?.Count > 0))
+                {
+                    var parentGens = person.ParentIds.Where(pid => _generations.ContainsKey(pid)).Select(pid => _generations[pid]).ToList();
+                    if (parentGens.Count > 0)
+                    {
+                        _generations[person.Id] = parentGens.Max() + 1;
+                        Console.WriteLine($"Gen {_generations[person.Id]}: {person.FullName}");
+                        changed = true;
+
+                        if (person.SpouseIds != null)
+                        {
+                            foreach (var spouseId in person.SpouseIds.Where(sid => !_generations.ContainsKey(sid)))
+                            {
+                                _generations[spouseId] = _generations[person.Id];
+                                Console.WriteLine($"Gen {_generations[spouseId]}: {_familyTree.GetPerson(spouseId)?.FullName} (cónyuge)");
+                            }
+                        }
+                    }
+                }
+            }
+
+            foreach (var person in allMembers.Where(p => !_generations.ContainsKey(p.Id)))
+            {
+                _generations[person.Id] = -1;
+                Console.WriteLine($"Gen -1: {person.FullName} (sin conexión)");
+            }
+
+            Console.WriteLine($"=== FIN CÁLCULO GENERACIONES ===");
         }
 
-        private class ParentGroup
+        private void CalculatePositionsImproved()
         {
-            public Person Parent1 { get; set; }
-            public Person Parent2 { get; set; }
-            public List<Person> Children { get; set; }
+            _nodePositions.Clear();
+            var allMembers = _familyTree.GetAllMembers();
+            if (allMembers.Count == 0) return;
+
+            var generations = _generations.GroupBy(kvp => kvp.Value).OrderBy(g => g.Key).ToList();
+            float currentY = MARGIN;
+
+            foreach (var gen in generations)
+            {
+                var genPeople = gen.Select(kvp => _familyTree.GetPerson(kvp.Key)).Where(p => p != null).ToList();
+                var familyGroups = new List<List<Person>>();
+                var processed = new HashSet<string>();
+
+                foreach (var person in genPeople.Where(p => !processed.Contains(p.Id)))
+                {
+                    var group = BuildFamilyGroupIterative(person, processed);
+                    if (group.Count > 0) familyGroups.Add(group);
+                }
+
+                float totalWidth = familyGroups.Sum(fg => CalculateGroupWidth(fg)) + (familyGroups.Count - 1) * FAMILY_GROUP_SPACING;
+                float currentX = (Screen.PrimaryScreen.WorkingArea.Width - totalWidth) / 2;
+
+                foreach (var group in familyGroups)
+                {
+                    PlaceFamilyGroup(group, ref currentX, currentY);
+                    currentX += FAMILY_GROUP_SPACING;
+                }
+
+                currentY += VERTICAL_SPACING;
+            }
+
+            Console.WriteLine($"Posiciones calculadas: {_nodePositions.Count}");
+        }
+
+        private List<Person> BuildFamilyGroupIterative(Person root, HashSet<string> processed)
+        {
+            var group = new List<Person>();
+            var queue = new Queue<Person>();
+            queue.Enqueue(root);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (processed.Contains(current.Id)) continue;
+
+                processed.Add(current.Id);
+                group.Add(current);
+
+                var spouses = _familyTree.GetSpouses(current.Id).Where(s => !processed.Contains(s.Id) &&
+                    _generations.ContainsKey(s.Id) && _generations[s.Id] == _generations[current.Id]);
+                foreach (var spouse in spouses) queue.Enqueue(spouse);
+            }
+            return group;
+        }
+
+        private float CalculateGroupWidth(List<Person> group) =>
+            group.Count == 1 ? BUBBLE_DIAMETER : (group.Count - 1) * COUPLE_SPACING + group.Count * BUBBLE_DIAMETER;
+
+        private void PlaceFamilyGroup(List<Person> group, ref float x, float y)
+        {
+            foreach (var person in group)
+            {
+                _nodePositions[person.Id] = new PointF(x, y);
+                Console.WriteLine($"Posición: {person.FullName} en ({x}, {y})");
+                x += BUBBLE_DIAMETER + COUPLE_SPACING;
+            }
+            x -= COUPLE_SPACING;
         }
 
         private void DrawBox_Paint(object sender, PaintEventArgs e)
         {
-            var g = e.Graphics;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            e.Graphics.Clear(Color.White);
+            e.Graphics.ScaleTransform(_zoomLevel, _zoomLevel);
+            e.Graphics.TranslateTransform(_panOffset.X / _zoomLevel, _panOffset.Y / _zoomLevel);
 
-            if (_nodePositions.Count == 0)
+            DrawRelationships(e.Graphics);
+            DrawNodes(e.Graphics);
+        }
+
+        private void DrawRelationships(Graphics g)
+        {
+            var drawnSpouseLinks = new HashSet<string>();
+            using (var pen = new Pen(Color.FromArgb(200, 200, 200), 2))
+            using (var redPen = new Pen(Color.FromArgb(220, 53, 69), 3))
             {
-                DrawEmptyMessage(g);
-                return;
+                foreach (var kvp in _nodePositions)
+                {
+                    var person = _familyTree.GetPerson(kvp.Key);
+                    if (person == null) continue;
+
+                    var pos = kvp.Value;
+                    var spouses = _familyTree.GetSpouses(person.Id);
+
+                    foreach (var spouse in spouses.Where(s => _nodePositions.ContainsKey(s.Id)))
+                    {
+                        string key = string.Compare(person.Id, spouse.Id) < 0 ? $"{person.Id}-{spouse.Id}" : $"{spouse.Id}-{person.Id}";
+                        if (drawnSpouseLinks.Contains(key)) continue;
+
+                        var spousePos = _nodePositions[spouse.Id];
+                        // Línea roja entre cónyuges
+                        g.DrawLine(redPen, pos.X + BUBBLE_DIAMETER / 2, pos.Y + BUBBLE_DIAMETER / 2,
+                            spousePos.X + BUBBLE_DIAMETER / 2, spousePos.Y + BUBBLE_DIAMETER / 2);
+                        drawnSpouseLinks.Add(key);
+                    }
+
+                    var children = _familyTree.GetChildren(person.Id);
+                    if (children.Count == 0) continue;
+
+                    var childrenInTree = children.Where(c => _nodePositions.ContainsKey(c.Id)).ToList();
+                    if (childrenInTree.Count == 0) continue;
+
+                    float baseX = spouses.Count > 0 && _nodePositions.ContainsKey(spouses[0].Id)
+                        ? (pos.X + _nodePositions[spouses[0].Id].X) / 2 + BUBBLE_DIAMETER / 2
+                        : pos.X + BUBBLE_DIAMETER / 2;
+                    float baseY = pos.Y + BUBBLE_DIAMETER;
+
+                    // Calcular el punto medio vertical hacia los hijos
+                    float minChildY = childrenInTree.Min(c => _nodePositions[c.Id].Y);
+                    float midY = baseY + (minChildY - baseY) / 2;
+
+                    // Línea vertical gris desde la pareja hasta el punto medio
+                    g.DrawLine(pen, baseX, baseY, baseX, midY);
+
+                    // Dibujar líneas diagonales desde el punto medio hacia cada hijo
+                    foreach (var child in childrenInTree)
+                    {
+                        var childPos = _nodePositions[child.Id];
+                        float childX = childPos.X + BUBBLE_DIAMETER / 2;
+                        float childY = childPos.Y;
+                        g.DrawLine(pen, baseX, midY, childX, childY);
+                    }
+                }
             }
+        }
 
-            // Primero todas las líneas
-            DrawAllLines(g);
-
-            // Después todos los nodos
+        private void DrawNodes(Graphics g)
+        {
             foreach (var kvp in _nodePositions)
             {
                 var person = _familyTree.GetPerson(kvp.Key);
-                if (person != null)
+                if (person == null) continue;
+
+                var pos = kvp.Value;
+                bool isSelected = _selectedPerson?.Id == person.Id;
+
+                using (var path = new GraphicsPath())
                 {
-                    DrawNode(g, person, kvp.Value);
-                }
-            }
-        }
-
-        private void DrawEmptyMessage(Graphics g)
-        {
-            string msg = "No hay miembros en el árbol.\n\nAgregue personas usando el botón 'Agregar Persona'.";
-            var font = new Font("Segoe UI", 18);
-            var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-            g.DrawString(msg, font, Brushes.Gray, _drawBox.Width / 2, _drawBox.Height / 2, sf);
-        }
-
-        private void DrawAllLines(Graphics g)
-        {
-            var drawnMarriages = new HashSet<string>();
-            var drawnParentChild = new HashSet<string>();
-
-            // 1. Líneas de matrimonio (horizontales)
-            foreach (var person in _familyTree.GetAllMembers())
-            {
-                if (!_nodePositions.ContainsKey(person.Id)) continue;
-
-                var spouses = _familyTree.GetSpouses(person.Id);
-                foreach (var spouse in spouses)
-                {
-                    if (!_nodePositions.ContainsKey(spouse.Id)) continue;
-                    if (!_personLevels.ContainsKey(person.Id) || !_personLevels.ContainsKey(spouse.Id)) continue;
-                    if (_personLevels[person.Id] != _personLevels[spouse.Id]) continue;
-
-                    string key = string.Compare(person.Id, spouse.Id) < 0 
-                        ? $"{person.Id}_{spouse.Id}" 
-                        : $"{spouse.Id}_{person.Id}";
-
-                    if (drawnMarriages.Contains(key)) continue;
-                    drawnMarriages.Add(key);
-
-                    var pos1 = _nodePositions[person.Id];
-                    var pos2 = _nodePositions[spouse.Id];
-
-                    float y = pos1.Y + NODE_HEIGHT / 2;
-                    float x1 = pos1.X + NODE_WIDTH;
-                    float x2 = pos2.X;
-
-                    using (var pen = new Pen(Color.FromArgb(220, 20, 60), 3))
+                    path.AddEllipse(pos.X, pos.Y, BUBBLE_DIAMETER, BUBBLE_DIAMETER);
+                    using (var pathBrush = new PathGradientBrush(path))
                     {
-                        g.DrawLine(pen, x1, y, x2, y);
+                        pathBrush.CenterColor = Color.FromArgb(173, 216, 230);
+                        pathBrush.SurroundColors = new[] { Color.FromArgb(135, 206, 250) };
+                        g.FillPath(pathBrush, path);
                     }
 
-                    float heartX = (x1 + x2) / 2;
-                    g.FillEllipse(Brushes.Red, heartX - 6, y - 6, 12, 12);
+                    using (var borderPen = new Pen(isSelected ? Color.FromArgb(255, 193, 7) : (person.IsAlive ? Color.FromArgb(40, 167, 69) : Color.FromArgb(220, 53, 69)), isSelected ? 4 : 2))
+                    {
+                        g.DrawPath(borderPen, path);
+                    }
                 }
-            }
 
-            // 2. Líneas padres-hijos (verticales ordenadas)
-            foreach (var person in _familyTree.GetAllMembers())
-            {
-                if (!_nodePositions.ContainsKey(person.Id)) continue;
-                if (!_personLevels.ContainsKey(person.Id)) continue;
+                Image photo = LoadPhoto(person);
+                if (photo != null)
+                {
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddEllipse(pos.X + 10, pos.Y + 10, BUBBLE_DIAMETER - 20, BUBBLE_DIAMETER - 20);
+                        var clip = g.Clip;
+                        g.SetClip(path);
+                        g.DrawImage(photo, pos.X + 10, pos.Y + 10, BUBBLE_DIAMETER - 20, BUBBLE_DIAMETER - 20);
+                        g.Clip = clip;
+                    }
+                }
+                else
+                {
+                    // Solo mostrar iniciales si no hay foto
+                    string initials = $"{person.FirstName[0]}{person.FirstLastName[0]}";
+                    using (var font = new Font("Arial", 18, FontStyle.Bold))
+                    using (var brush = new SolidBrush(Color.White))
+                    using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                    {
+                        g.DrawString(initials, font, brush, new RectangleF(pos.X, pos.Y, BUBBLE_DIAMETER, BUBBLE_DIAMETER), format);
+                    }
+                }
 
-                var children = _familyTree.GetChildren(person.Id)
-                    .Where(c => _nodePositions.ContainsKey(c.Id) && _personLevels.ContainsKey(c.Id))
-                    .ToList();
-
-                if (children.Count == 0) continue;
-
-                string key = person.Id;
-                if (drawnParentChild.Contains(key)) continue;
-                drawnParentChild.Add(key);
-
-                DrawParentChildLines(g, person, children);
+                string displayName = person.FirstName.Length > 12 ? person.FirstName.Substring(0, 12) + "..." : person.FirstName;
+                using (var font = new Font("Segoe UI", 9, FontStyle.Bold))
+                using (var brush = new SolidBrush(Color.FromArgb(33, 37, 41)))
+                using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                {
+                    g.DrawString(displayName, font, brush, new RectangleF(pos.X - 25, pos.Y + BUBBLE_DIAMETER + 5, BUBBLE_DIAMETER + 50, 20), format);
+                    g.DrawString($"{person.Age} años", font, brush, new RectangleF(pos.X - 25, pos.Y + BUBBLE_DIAMETER + 22, BUBBLE_DIAMETER + 50, 20), format);
+                }
             }
         }
 
-        private void DrawParentChildLines(Graphics g, Person parent, List<Person> children)
+        private Image LoadPhoto(Person person)
         {
-            var parentPos = _nodePositions[parent.Id];
-            float parentY = parentPos.Y + NODE_HEIGHT;
+            if (string.IsNullOrWhiteSpace(person.PhotoUrl)) return null;
+            if (_photoCache.ContainsKey(person.Id)) return _photoCache[person.Id];
 
-            // Encontrar punto de inicio (centro de pareja o centro de padre)
-            var spouse = _familyTree.GetSpouses(parent.Id)
-                .FirstOrDefault(s => _personLevels.ContainsKey(s.Id) && 
-                                   _personLevels[s.Id] == _personLevels[parent.Id] &&
-                                   _nodePositions.ContainsKey(s.Id));
-
-            float startX;
-            if (spouse != null)
+            try
             {
-                var spousePos = _nodePositions[spouse.Id];
-                startX = (parentPos.X + NODE_WIDTH + spousePos.X) / 2;
+                using (var client = new HttpClient())
+                {
+                    var data = client.GetByteArrayAsync(person.PhotoUrl).Result;
+                    using (var ms = new System.IO.MemoryStream(data))
+                    {
+                        _photoCache[person.Id] = Image.FromStream(ms);
+                        return _photoCache[person.Id];
+                    }
+                }
             }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void DrawBox_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+
+            float worldX = (e.X - _panOffset.X) / _zoomLevel;
+            float worldY = (e.Y - _panOffset.Y) / _zoomLevel;
+
+            foreach (var kvp in _nodePositions)
+            {
+                var pos = kvp.Value;
+                float dx = worldX - (pos.X + BUBBLE_DIAMETER / 2);
+                float dy = worldY - (pos.Y + BUBBLE_DIAMETER / 2);
+
+                if (Math.Sqrt(dx * dx + dy * dy) <= BUBBLE_DIAMETER / 2)
+                {
+                    ShowPersonDetails(kvp.Key);
+                    return;
+                }
+            }
+        }
+
+        private void ShowPersonDetails(string personId)
+        {
+            var person = _familyTree.GetPerson(personId);
+            if (person == null) return;
+
+            _selectedPerson = person;
+            _drawBox.Invalidate();
+            _sidePanel.Controls.Clear();
+            _sidePanel.Visible = true;
+
+            int yPos = 10;
+
+            var photoPanel = new Panel { Location = new Point(105, yPos), Size = new Size(140, 140), BackColor = Color.White, BorderStyle = BorderStyle.FixedSingle };
+            Image photo = LoadPhoto(person);
+            if (photo != null)
+            {
+                var pb = new PictureBox { Dock = DockStyle.Fill, Image = photo, SizeMode = PictureBoxSizeMode.Zoom };
+                photoPanel.Controls.Add(pb);
+            }
+            _sidePanel.Controls.Add(photoPanel);
+            yPos += 155;
+
+            var lblName = new Label
+            {
+                Text = person.FullName,
+                Location = new Point(20, yPos),
+                Size = new Size(310, 40),
+                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33, 37, 41),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
+            };
+            _sidePanel.Controls.Add(lblName);
+            yPos += 50;
+
+            AddSectionHeader("📋 INFORMACIÓN BÁSICA", ref yPos);
+            AddInfoField("Edad:", $"{person.Age} años", ref yPos);
+            AddInfoField("Fecha Nac.:", person.BirthDate.ToString("dd/MM/yyyy"), ref yPos);
+            AddInfoField("Estado:", person.IsAlive ? "Vivo" : "Fallecido", ref yPos);
+
+            if (!person.IsAlive && person.DeathDate.HasValue)
+                AddInfoField("Defunción:", person.DeathDate.Value.ToString("dd/MM/yyyy"), ref yPos);
+
+            AddInfoField("Cédula:", person.NationalId ?? "No registrada", ref yPos);
+            AddInfoField("Generación:", _generations.ContainsKey(person.Id) ? _generations[person.Id].ToString() : "N/A", ref yPos);
+            yPos += 20;
+
+            AddRelationSection("👨‍👩 PADRES", _familyTree.GetParents(person.Id), ref yPos);
+            AddRelationSection("💑 CÓNYUGE(S)", _familyTree.GetSpouses(person.Id), ref yPos);
+            AddRelationSection("👶 HIJOS", _familyTree.GetChildren(person.Id).OrderBy(c => c.BirthDate).ToList(), ref yPos);
+
+            var btnClose = new Button
+            {
+                Text = "✕ Cerrar",
+                Location = new Point(20, yPos + 10),
+                Size = new Size(310, 40),
+                BackColor = Color.FromArgb(108, 117, 125),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.Click += (s, e) => _sidePanel.Visible = false;
+            _sidePanel.Controls.Add(btnClose);
+
+            _sidePanel.AutoScrollMinSize = new Size(0, yPos + 70);
+        }
+
+        private void AddRelationSection(string title, List<Person> people, ref int yPos)
+        {
+            AddSectionHeader(title, ref yPos);
+            if (people.Count > 0)
+                foreach (var p in people) AddPersonCard(p, ref yPos);
             else
-            {
-                startX = parentPos.X + NODE_WIDTH / 2;
-            }
-
-            // Posiciones de hijos
-            var childCenters = children
-                .Select(c => new { 
-                    Person = c, 
-                    X = _nodePositions[c.Id].X + NODE_WIDTH / 2,
-                    Y = _nodePositions[c.Id].Y 
-                })
-                .OrderBy(c => c.X)
-                .ToList();
-
-            float horizontalLineY = parentY + V_SPACING / 2;
-
-            using (var pen = new Pen(Color.FromArgb(70, 130, 180), 3))
-            {
-                // Línea vertical desde padres hasta línea horizontal
-                g.DrawLine(pen, startX, parentY, startX, horizontalLineY);
-
-                if (childCenters.Count > 1)
-                {
-                    // Línea horizontal conectando todos los hijos
-                    float leftX = childCenters.First().X;
-                    float rightX = childCenters.Last().X;
-                    g.DrawLine(pen, leftX, horizontalLineY, rightX, horizontalLineY);
-                }
-
-                // Líneas verticales a cada hijo
-                foreach (var child in childCenters)
-                {
-                    g.DrawLine(pen, child.X, horizontalLineY, child.X, child.Y);
-                }
-            }
+                AddEmptyMessage("Sin " + (title.Contains("PADRES") ? "padres" : title.Contains("CÓNYUGE") ? "cónyuge" : "hijos") + " registrados", ref yPos);
+            yPos += 20;
         }
 
-        private void DrawNode(Graphics g, Person person, PointF position)
+        private void AddSectionHeader(string title, ref int yPos)
         {
-            var rect = new Rectangle((int)position.X, (int)position.Y, NODE_WIDTH, NODE_HEIGHT);
-
-            // Sombra
-            var shadowRect = new Rectangle(rect.X + 3, rect.Y + 3, rect.Width, rect.Height);
-            using (var shadowBrush = new SolidBrush(Color.FromArgb(30, 0, 0, 0)))
+            _sidePanel.Controls.Add(new Label
             {
-                g.FillRoundedRectangle(shadowBrush, shadowRect, 8);
-            }
-
-            // Fondo con gradiente
-            var color1 = person.IsAlive ? Color.FromArgb(230, 245, 255) : Color.FromArgb(210, 210, 210);
-            var color2 = person.IsAlive ? Color.FromArgb(200, 230, 255) : Color.FromArgb(170, 170, 170);
-            
-            using (var gradient = new System.Drawing.Drawing2D.LinearGradientBrush(
-                rect, color1, color2, System.Drawing.Drawing2D.LinearGradientMode.Vertical))
-            {
-                g.FillRoundedRectangle(gradient, rect, 8);
-            }
-
-            // Borde
-            var borderColor = person.IsAlive ? Color.FromArgb(0, 122, 204) : Color.Gray;
-            using (var pen = new Pen(borderColor, 2))
-            {
-                g.DrawRoundedRectangle(pen, rect, 8);
-            }
-
-            // Texto
-            var fontName = new Font("Segoe UI", 10, FontStyle.Bold);
-            var fontSmall = new Font("Segoe UI", 8.5f);
-            var fontTiny = new Font("Segoe UI", 7.5f);
-            var sf = new StringFormat { Alignment = StringAlignment.Center };
-
-            float centerX = position.X + NODE_WIDTH / 2;
-            float textY = position.Y + 10;
-
-            g.DrawString(person.FullName, fontName, Brushes.Black, centerX, textY, sf);
-            textY += 22;
-
-            g.DrawString($"🆔 {person.NationalId}", fontSmall, Brushes.DarkSlateGray, centerX, textY, sf);
-            textY += 20;
-
-            string ageText = person.IsAlive ? $"🎂 {person.Age} años" : $"✝ {person.Age} años";
-            var ageColor = person.IsAlive ? Color.DarkGreen : Color.DarkRed;
-            g.DrawString(ageText, fontSmall, new SolidBrush(ageColor), centerX, textY, sf);
-            textY += 20;
-
-            g.DrawString($"📍 {person.Address}", fontTiny, Brushes.Navy, centerX, textY, sf);
-        }
-    }
-
-    public static class GraphicsExtensions
-    {
-        public static void FillRoundedRectangle(this Graphics g, Brush brush, Rectangle rect, int radius)
-        {
-            using (var path = GetRoundedRectPath(rect, radius))
-            {
-                g.FillPath(brush, path);
-            }
+                Text = title,
+                Location = new Point(20, yPos),
+                Size = new Size(310, 25),
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                ForeColor = Color.FromArgb(52, 58, 64),
+                BackColor = Color.Transparent
+            });
+            yPos += 30;
+            _sidePanel.Controls.Add(new Panel { Location = new Point(20, yPos), Size = new Size(310, 2), BackColor = Color.FromArgb(222, 226, 230) });
+            yPos += 15;
         }
 
-        public static void DrawRoundedRectangle(this Graphics g, Pen pen, Rectangle rect, int radius)
+        private void AddInfoField(string label, string value, ref int yPos)
         {
-            using (var path = GetRoundedRectPath(rect, radius))
+            var lblLabel = new Label
             {
-                g.DrawPath(pen, path);
-            }
+                Text = label,
+                Location = new Point(20, yPos),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = Color.FromArgb(108, 117, 125),
+                BackColor = Color.Transparent
+            };
+            var lblValue = new Label
+            {
+                Text = value,
+                Location = new Point(130, yPos),
+                MaximumSize = new Size(190, 0),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9),
+                ForeColor = Color.FromArgb(33, 37, 41),
+                BackColor = Color.Transparent
+            };
+            _sidePanel.Controls.AddRange(new Control[] { lblLabel, lblValue });
+            yPos += Math.Max(lblLabel.Height, lblValue.Height) + 10;
         }
 
-        private static System.Drawing.Drawing2D.GraphicsPath GetRoundedRectPath(Rectangle rect, int radius)
+        private void AddPersonCard(Person person, ref int yPos)
         {
-            var path = new System.Drawing.Drawing2D.GraphicsPath();
-            path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
-            path.AddArc(rect.Right - radius, rect.Y, radius, radius, 270, 90);
-            path.AddArc(rect.Right - radius, rect.Bottom - radius, radius, radius, 0, 90);
-            path.AddArc(rect.X, rect.Bottom - radius, radius, radius, 90, 90);
-            path.CloseFigure();
-            return path;
+            var card = new Panel
+            {
+                Location = new Point(20, yPos),
+                Size = new Size(310, 60),
+                BackColor = Color.FromArgb(248, 249, 250),
+                BorderStyle = BorderStyle.FixedSingle,
+                Cursor = Cursors.Hand
+            };
+
+            bool isAlive = person.IsAlive;
+            var lblStatus = new Label
+            {
+                Text = isAlive ? "✓" : "✝",
+                Location = new Point(10, 15),
+                Size = new Size(20, 20),
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                ForeColor = isAlive ? Color.FromArgb(40, 167, 69) : Color.FromArgb(220, 53, 69),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
+            };
+            var lblName = new Label
+            {
+                Text = person.FullName,
+                Location = new Point(40, 8),
+                MaximumSize = new Size(260, 0),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33, 37, 41),
+                BackColor = Color.Transparent
+            };
+            var lblAge = new Label
+            {
+                Text = $"{person.Age} años",
+                Location = new Point(40, lblName.Height + 10),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8),
+                ForeColor = Color.FromArgb(108, 117, 125),
+                BackColor = Color.Transparent
+            };
+
+            card.Controls.AddRange(new Control[] { lblStatus, lblName, lblAge });
+            int cardHeight = Math.Max(60, lblName.Height + lblAge.Height + 20);
+            card.Height = cardHeight;
+
+            card.Click += (s, e) => ShowPersonDetails(person.Id);
+            foreach (Control ctrl in card.Controls) ctrl.Click += (s, e) => ShowPersonDetails(person.Id);
+
+            _sidePanel.Controls.Add(card);
+            yPos += cardHeight + 10;
+        }
+
+        private void AddEmptyMessage(string message, ref int yPos)
+        {
+            _sidePanel.Controls.Add(new Label
+            {
+                Text = message,
+                Location = new Point(20, yPos),
+                Size = new Size(310, 30),
+                Font = new Font("Segoe UI", 9, FontStyle.Italic),
+                ForeColor = Color.FromArgb(173, 181, 189),
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.Transparent
+            });
+            yPos += 40;
         }
     }
 }

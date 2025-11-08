@@ -43,6 +43,51 @@ namespace WorldMapZoom
             }
         }
 
+        public void RemovePerson(string personId)
+        {
+            if (!members.ContainsKey(personId))
+                return;
+
+            var person = members[personId];
+
+            // Eliminar referencias en padres
+            foreach (var parentId in person.ParentIds.ToList())
+            {
+                if (members.ContainsKey(parentId))
+                {
+                    members[parentId].ChildrenIds.Remove(personId);
+                }
+            }
+
+            // Eliminar referencias en cónyuges
+            foreach (var spouseId in person.SpouseIds.ToList())
+            {
+                if (members.ContainsKey(spouseId))
+                {
+                    members[spouseId].SpouseIds.Remove(personId);
+                }
+            }
+
+            // Eliminar referencias en hijos
+            foreach (var childId in person.ChildrenIds.ToList())
+            {
+                if (members.ContainsKey(childId))
+                {
+                    members[childId].ParentIds.Remove(personId);
+                }
+            }
+
+            // Eliminar la persona del diccionario
+            members.Remove(personId);
+
+            // Reconstruir el grafo
+            graph = new Graph();
+            foreach (var p in members.Values)
+            {
+                graph.AddNode(p);
+            }
+        }
+
         public void AddParentRelation(string childId, string parentId)
         {
             if (members.ContainsKey(childId) && members.ContainsKey(parentId))
