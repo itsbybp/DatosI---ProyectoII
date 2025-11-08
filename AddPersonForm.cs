@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace WorldMapZoom
 {
@@ -309,6 +310,15 @@ namespace WorldMapZoom
                 return;
             }
 
+            // Validar formato de cédula
+            if (!EsCedulaValidaFormato(_txtNationalId.Text))
+            {
+                MessageBox.Show("La cédula debe tener el formato #-####-####, donde # es un número del 0 al 9.\nEjemplo: 1-2345-6789", 
+                    "Formato de cédula inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtNationalId.Focus();
+                return;
+            }
+
             // Verificar cédula duplicada
             if (_familyTree.GetAllMembers().Any(p => p.NationalId == _txtNationalId.Text.Trim()))
             {
@@ -464,6 +474,18 @@ namespace WorldMapZoom
         {
             text = text.Replace('.', ',');
             return double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out value);
+        }
+
+        private bool EsCedulaValidaFormato(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+                return false;
+
+            // Patrón regex para formato #-####-####
+            // Donde # es un dígito del 0 al 9
+            var patron = @"^\d-\d{4}-\d{4}$";
+            
+            return System.Text.RegularExpressions.Regex.IsMatch(cedula.Trim(), patron);
         }
 
         private class ComboBoxItem

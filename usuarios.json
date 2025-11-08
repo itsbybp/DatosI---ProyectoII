@@ -17,7 +17,7 @@
       "relations": {
         "parents": [],
         "spouses": ["gen0-madre"],
-        "children": ["gen1-hijo1", "gen1-hija2", "gen1-hijo3", "5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"]
+        "children": ["gen1-hijo1", "gen1-hija2", "gen1-hijo3", "5c8f0a2a-69da-404b-91d2-ad4ccf45fffb", "09e9de6d-8b70-46c6-8067-6fcbc2e1f915"]
       }
     },
     {
@@ -461,13 +461,32 @@
       "id": "5c8f0a2a-69da-404b-91d2-ad4ccf45fffb",
       "name": "Richard Watterson Lol",
       "national_id": "1-2345-6789",
-      "birth_date": "2025-11-08",
+      "birth_date": "2000-11-08",
       "alive": true,
       "age": 0,
       "photo_url": "https://randomuser.me/api/portraits/men/1.jpg",
       "location": {
         "lat": 9.8,
         "lng": -84.091,
+        "address": "San José"
+      },
+      "relations": {
+        "parents": ["gen0-padre"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "09e9de6d-8b70-46c6-8067-6fcbc2e1f915",
+      "name": "Anais Watterson Lol",
+      "national_id": "1-2330-1212",
+      "birth_date": "2025-11-08",
+      "alive": true,
+      "age": 0,
+      "photo_url": "https://randomuser.me/api/portraits/men/1.jpg",
+      "location": {
+        "lat": 9.935,
+        "lng": -84.1,
         "address": "San José"
       },
       "relations": {
