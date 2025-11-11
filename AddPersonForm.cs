@@ -3,6 +3,8 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.IO;
 
 namespace WorldMapZoom
 {
@@ -18,7 +20,9 @@ namespace WorldMapZoom
         private CheckBox _chkDeceased;
         private DateTimePicker _dtpDeathDate;
         private Label _lblDeathDate;
-        private TextBox _txtPhotoUrl;
+        private Button _btnSelectPhoto;
+        private Label _lblSelectedPhoto;
+        private string _selectedPhotoPath;
         private TextBox _txtLatitude;
         private TextBox _txtLongitude;
         private TextBox _txtAddress;
@@ -107,9 +111,30 @@ namespace WorldMapZoom
             Controls.Add(_dtpDeathDate);
             yPos += 40;
 
-            AddLabel("URL Foto *:", 20, yPos, labelWidth);
-            _txtPhotoUrl = AddTextBox(textBoxX, yPos, textBoxWidth);
-            _txtPhotoUrl.Text = "https://randomuser.me/api/portraits/men/1.jpg";
+            AddLabel("Foto *:", 20, yPos, labelWidth);
+            _btnSelectPhoto = new Button
+            {
+                Location = new Point(textBoxX, yPos),
+                Width = 120,
+                Height = 23,
+                Text = "Seleccionar Foto",
+                BackColor = Color.FromArgb(52, 152, 219),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            _btnSelectPhoto.FlatAppearance.BorderSize = 0;
+            _btnSelectPhoto.Click += BtnSelectPhoto_Click;
+            Controls.Add(_btnSelectPhoto);
+
+            _lblSelectedPhoto = new Label
+            {
+                Location = new Point(textBoxX + 130, yPos + 3),
+                Width = textBoxWidth - 130,
+                Height = 20,
+                Text = "Ningún archivo seleccionado",
+                ForeColor = Color.Gray
+            };
+            Controls.Add(_lblSelectedPhoto);
             yPos += 40;
 
             AddLabel("Latitud *:", 20, yPos, labelWidth);
@@ -309,6 +334,15 @@ namespace WorldMapZoom
                 return;
             }
 
+            // Validar formato de cédula
+            if (!EsCedulaValidaFormato(_txtNationalId.Text))
+            {
+                MessageBox.Show("La cédula debe tener el formato #-####-####, donde # es un número del 0 al 9.\nEjemplo: 1-2345-6789", 
+                    "Formato de cédula inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtNationalId.Focus();
+                return;
+            }
+
             // Verificar cédula duplicada
             if (_familyTree.GetAllMembers().Any(p => p.NationalId == _txtNationalId.Text.Trim()))
             {
@@ -370,12 +404,12 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar URL de foto
-            if (string.IsNullOrWhiteSpace(_txtPhotoUrl.Text))
+            // Validar foto
+            if (string.IsNullOrWhiteSpace(_selectedPhotoPath))
             {
-                MessageBox.Show("La URL de la foto es obligatoria.", "Campo requerido", 
+                MessageBox.Show("Debe seleccionar una foto.", "Campo requerido", 
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                _txtPhotoUrl.Focus();
+                _btnSelectPhoto.Focus();
                 return;
             }
 
@@ -390,6 +424,19 @@ namespace WorldMapZoom
 
             try
             {
+                // Copiar imagen a la carpeta Images con el nombre de la cédula
+                string imagesFolder = Path.Combine(Environment.CurrentDirectory, "Images");
+                if (!Directory.Exists(imagesFolder))
+                {
+                    Directory.CreateDirectory(imagesFolder);
+                }
+
+                string fileExtension = Path.GetExtension(_selectedPhotoPath);
+                string targetFileName = _txtNationalId.Text.Trim() + fileExtension;
+                string targetPath = Path.Combine(imagesFolder, targetFileName);
+
+                File.Copy(_selectedPhotoPath, targetPath, true);
+
                 var person = new Person
                 {
                     FirstName = _txtFirstName.Text.Trim(),
@@ -400,7 +447,7 @@ namespace WorldMapZoom
                     BirthDate = _dtpBirthDate.Value,
                     IsAlive = !_chkDeceased.Checked,
                     DeathDate = _chkDeceased.Checked ? _dtpDeathDate.Value : (DateTime?)null,
-                    PhotoUrl = _txtPhotoUrl.Text.Trim(),
+                    PhotoUrl = $"Images/{targetFileName}",
                     Latitude = lat,
                     Longitude = lng,
                     Address = _txtAddress.Text.Trim()
@@ -464,6 +511,34 @@ namespace WorldMapZoom
         {
             text = text.Replace('.', ',');
             return double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out value);
+        }
+
+        private bool EsCedulaValidaFormato(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula))
+                return false;
+
+            // Patrón regex para formato #-####-####
+            // Donde # es un dígito del 0 al 9
+            var patron = @"^\d-\d{4}-\d{4}$";
+            
+            return System.Text.RegularExpressions.Regex.IsMatch(cedula.Trim(), patron);
+        }
+
+        private void BtnSelectPhoto_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Filter = "Archivos de imagen|*.jpg;*.jpeg;*.png;*.gif;*.bmp|Todos los archivos|*.*";
+                openFileDialog.Title = "Seleccionar foto para la persona";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    _selectedPhotoPath = openFileDialog.FileName;
+                    _lblSelectedPhoto.Text = System.IO.Path.GetFileName(_selectedPhotoPath);
+                    _lblSelectedPhoto.ForeColor = Color.Black;
+                }
+            }
         }
 
         private class ComboBoxItem

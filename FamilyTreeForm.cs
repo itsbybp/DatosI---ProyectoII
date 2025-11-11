@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -381,13 +382,27 @@ namespace WorldMapZoom
 
             try
             {
-                using (var client = new HttpClient())
+                // Si es una ruta local (empieza con "Images/"), cargar desde archivo
+                if (person.PhotoUrl.StartsWith("Images/"))
                 {
-                    var data = client.GetByteArrayAsync(person.PhotoUrl).Result;
-                    using (var ms = new System.IO.MemoryStream(data))
+                    string localPath = System.IO.Path.Combine(Environment.CurrentDirectory, person.PhotoUrl);
+                    if (File.Exists(localPath))
                     {
-                        _photoCache[person.Id] = Image.FromStream(ms);
+                        _photoCache[person.Id] = Image.FromFile(localPath);
                         return _photoCache[person.Id];
+                    }
+                }
+                // Si es una URL remota, descargar
+                else if (person.PhotoUrl.StartsWith("http"))
+                {
+                    using (var client = new HttpClient())
+                    {
+                        var data = client.GetByteArrayAsync(person.PhotoUrl).Result;
+                        using (var ms = new System.IO.MemoryStream(data))
+                        {
+                            _photoCache[person.Id] = Image.FromStream(ms);
+                            return _photoCache[person.Id];
+                        }
                     }
                 }
             }
@@ -395,6 +410,8 @@ namespace WorldMapZoom
             {
                 return null;
             }
+            
+            return null; // Si no se pudo cargar la imagen
         }
 
         private void DrawBox_MouseClick(object sender, MouseEventArgs e)

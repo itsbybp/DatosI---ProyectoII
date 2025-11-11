@@ -151,6 +151,11 @@ namespace WorldMapZoom
 
                 if (_webView.CoreWebView2 != null)
                 {
+                    // Permitir acceso a archivos locales
+                    _webView.CoreWebView2.Settings.AreHostObjectsAllowed = true;
+                    _webView.CoreWebView2.Settings.IsWebMessageEnabled = true;
+                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                    
                     _webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
                     RefreshMap();
                 }
@@ -383,7 +388,7 @@ namespace WorldMapZoom
                 sb.AppendFormat("\"id\":\"{0}\",", EscapeJson(person.Id));
                 sb.AppendFormat("\"name\":\"{0}\",", EscapeJson(person.FullName));
                 sb.AppendFormat("\"national_id\":\"{0}\",", EscapeJson(person.NationalId));
-                sb.AppendFormat("\"photo_url\":\"{0}\",", EscapeJson(person.PhotoUrl));
+                sb.AppendFormat("\"photo_url\":\"{0}\",", EscapeJson(GetAbsolutePhotoUrl(person.PhotoUrl)));
                 sb.AppendFormat("\"lat\":{0},", person.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 sb.AppendFormat("\"lng\":{0},", person.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 sb.AppendFormat("\"address\":\"{0}\",", EscapeJson(person.Address));
@@ -394,6 +399,54 @@ namespace WorldMapZoom
 
             sb.Append("]");
             return sb.ToString();
+        }
+
+        private string GetAbsolutePhotoUrl(string photoUrl)
+        {
+            if (string.IsNullOrEmpty(photoUrl))
+                return photoUrl;
+
+            // Si la URL empieza con "Images/", convertirla a data URL base64
+            if (photoUrl.StartsWith("Images/"))
+            {
+                try
+                {
+                    string absolutePath = System.IO.Path.Combine(Environment.CurrentDirectory, photoUrl);
+                    if (File.Exists(absolutePath))
+                    {
+                        byte[] imageBytes = File.ReadAllBytes(absolutePath);
+                        string base64String = Convert.ToBase64String(imageBytes);
+                        string extension = Path.GetExtension(absolutePath).ToLower();
+                        string mimeType = GetMimeType(extension);
+                        return $"data:{mimeType};base64,{base64String}";
+                    }
+                }
+                catch
+                {
+                    // Si hay error, devolver una imagen placeholder o la URL original
+                }
+            }
+
+            // Si es una URL completa (http/https), devolverla tal como está
+            return photoUrl;
+        }
+
+        private string GetMimeType(string extension)
+        {
+            switch (extension)
+            {
+                case ".jpg":
+                case ".jpeg":
+                    return "image/jpeg";
+                case ".png":
+                    return "image/png";
+                case ".gif":
+                    return "image/gif";
+                case ".bmp":
+                    return "image/bmp";
+                default:
+                    return "image/jpeg";
+            }
         }
 
         private string EscapeJson(string text)
