@@ -17,7 +17,7 @@
       "relations": {
         "parents": [],
         "spouses": [],
-        "children": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb", "8a2f16bf-00d7-46bb-aa3f-0d5762793f78"]
+        "children": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"]
       }
     },
     {
@@ -36,24 +36,24 @@
       "relations": {
         "parents": ["gen0-padre"],
         "spouses": [],
-        "children": []
+        "children": ["024eb9aa-36dd-4b42-b23e-7612e11539a4"]
       }
     },
     {
-      "id": "8a2f16bf-00d7-46bb-aa3f-0d5762793f78",
-      "name": "Gerardo Gómez Herrera",
-      "national_id": "1-0000-1111",
-      "birth_date": "2025-11-08",
+      "id": "024eb9aa-36dd-4b42-b23e-7612e11539a4",
+      "name": "Juan Rojas Obando",
+      "national_id": "1-1111-2222",
+      "birth_date": "2025-11-13",
       "alive": true,
       "age": 0,
-      "photo_url": "Images/1-0000-1111.png",
+      "photo_url": "Images/1-1111-2222.png",
       "location": {
-        "lat": 9.7,
-        "lng": -84.3,
+        "lat": 9.935,
+        "lng": -84.8,
         "address": "Costa Rica"
       },
       "relations": {
-        "parents": ["gen0-padre"],
+        "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
         "spouses": [],
         "children": []
       }

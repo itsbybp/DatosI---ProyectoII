@@ -154,7 +154,7 @@ namespace WorldMapZoom
                     // Permitir acceso a archivos locales
                     _webView.CoreWebView2.Settings.AreHostObjectsAllowed = true;
                     _webView.CoreWebView2.Settings.IsWebMessageEnabled = true;
-                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = true; // Habilitar temporalmente para debug
                     
                     _webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
                     RefreshMap();
@@ -207,17 +207,38 @@ namespace WorldMapZoom
                 var otherPerson = graph.GetPerson(kvp.Key);
                 if (otherPerson != null)
                 {
-                    script.AppendLine($"var line = L.polyline([[{person.Latitude}, {person.Longitude}], [{otherPerson.Latitude}, {otherPerson.Longitude}]], {{");
-                    script.AppendLine("  color: 'red',");
-                    script.AppendLine("  weight: 2,");
-                    script.AppendLine("  opacity: 0.7,");
-                    script.AppendLine("  dashArray: '5, 10'");
+                    // Usar InvariantCulture para garantizar formato con punto decimal
+                    var lat1 = person.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                    var lng1 = person.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                    var lat2 = otherPerson.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                    var lng2 = otherPerson.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                    
+                    script.AppendLine($"console.log('Creating line from [{lat1}, {lng1}] to [{lat2}, {lng2}]');");
+                    script.AppendLine($"var line = L.polyline([[{lat1}, {lng1}], [{lat2}, {lng2}]], {{");
+                    script.AppendLine("  color: 'black',");
+                    script.AppendLine("  weight: 3,");
+                    script.AppendLine("  opacity: 0.8");
                     script.AppendLine("}).addTo(map);");
-                    script.AppendLine($"line.bindPopup('<b>{person.FullName}</b> → <b>{otherPerson.FullName}</b><br>Distancia: {kvp.Value:F2} km');");
                     script.AppendLine("window.distanceLines.push(line);");
+                    
+                    // Calcular el punto medio de la línea para mostrar la distancia
+                    script.AppendLine($"var midLat = ({lat1} + {lat2}) / 2;");
+                    script.AppendLine($"var midLng = ({lng1} + {lng2}) / 2;");
+                    
+                    // Crear un marcador de texto en el punto medio
+                    var distanceText = kvp.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                    script.AppendLine($"var distanceIcon = L.divIcon({{");
+                    script.AppendLine($"  html: '<div style=\"min-width: 60px; text-align: center; font-size: 12px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;\">{distanceText} km</div>',");
+                    script.AppendLine("  className: 'distance-label',");
+                    script.AppendLine("  iconSize: [null, null],");
+                    script.AppendLine("  iconAnchor: [null, null]");
+                    script.AppendLine("});");
+                    script.AppendLine($"var distanceMarker = L.marker([midLat, midLng], {{icon: distanceIcon}}).addTo(map);");
+                    script.AppendLine("window.distanceLines.push(distanceMarker);");
                 }
             }
 
+            script.AppendLine($"console.log('Total lines created:', window.distanceLines.length);");
             _webView.CoreWebView2?.ExecuteScriptAsync(script.ToString());
         }
 
@@ -326,7 +347,7 @@ namespace WorldMapZoom
             sb.AppendLine("users.forEach(function(user) {");
             sb.AppendLine("  var size = getPhotoSize(map.getZoom());");
             sb.AppendLine("  var icon = L.divIcon({");
-            sb.AppendLine("    html: '<img src=\"' + user.photo_url + '\" class=\"user-photo' + (user.alive ? '' : ' deceased') + '\" width=\"' + size + '\" height=\"' + size + '\" onclick=\"selectPerson(\\'' + user.id + '\\')\" title=\"Click para ver distancias\">',");
+            sb.AppendLine("    html: '<img src=\"' + user.photo_url + '\" class=\"user-photo' + (user.alive ? '' : ' deceased') + '\" width=\"' + size + '\" height=\"' + size + '\" title=\"Click para ver distancias\">',");
             sb.AppendLine("    iconSize: [size, size],");
             sb.AppendLine("    iconAnchor: [size/2, size/2],");
             sb.AppendLine("    className: ''");
@@ -334,9 +355,10 @@ namespace WorldMapZoom
             sb.AppendLine("  var popupContent = '<b>' + user.name + '</b><br>' + user.address + '<br>Cédula: ' + user.national_id + '<br>';");
             sb.AppendLine("  if (user.alive) { popupContent += 'Edad: ' + user.age + ' años'; }");
             sb.AppendLine("  else { popupContent += '† ' + user.age + ' años'; }");
-            sb.AppendLine("  var marker = L.marker([user.lat, user.lng], {icon: icon})");
-            sb.AppendLine("    .bindPopup(popupContent)");
-            sb.AppendLine("    .addTo(map);");
+            sb.AppendLine("  var marker = L.marker([user.lat, user.lng], {icon: icon});");
+            sb.AppendLine("  marker.bindPopup(popupContent);");
+            sb.AppendLine("  marker.on('click', function() { selectPerson(user.id); });");
+            sb.AppendLine("  marker.addTo(map);");
             sb.AppendLine("  markers.push({marker: marker, user: user});");
             sb.AppendLine("});");
 
@@ -344,16 +366,20 @@ namespace WorldMapZoom
             sb.AppendLine("  var size = getPhotoSize(map.getZoom());");
             sb.AppendLine("  markers.forEach(function(m) {");
             sb.AppendLine("    var icon = L.divIcon({");
-            sb.AppendLine("      html: '<img src=\"' + m.user.photo_url + '\" class=\"user-photo' + (m.user.alive ? '' : ' deceased') + '\" width=\"' + size + '\" height=\"' + size + '\" onclick=\"selectPerson(\\'' + m.user.id + '\\')\" title=\"Click para ver distancias\">',");
+            sb.AppendLine("      html: '<img src=\"' + m.user.photo_url + '\" class=\"user-photo' + (m.user.alive ? '' : ' deceased') + '\" width=\"' + size + '\" height=\"' + size + '\" title=\"Click para ver distancias\">',");
             sb.AppendLine("      iconSize: [size, size],");
             sb.AppendLine("      iconAnchor: [size/2, size/2],");
             sb.AppendLine("      className: ''");
             sb.AppendLine("    });");
             sb.AppendLine("    m.marker.setIcon(icon);");
+            sb.AppendLine("    // Re-attach click event after icon update");
+            sb.AppendLine("    m.marker.off('click');");
+            sb.AppendLine("    m.marker.on('click', function() { selectPerson(m.user.id); });");
             sb.AppendLine("  });");
             sb.AppendLine("});");
 
             sb.AppendLine("function selectPerson(personId) {");
+            sb.AppendLine("  console.log('selectPerson called with:', personId);");
             sb.AppendLine("  if (selectedPersonId === personId) {");
             sb.AppendLine("    if (window.distanceLines) {");
             sb.AppendLine("      window.distanceLines.forEach(line => map.removeLayer(line));");
@@ -362,6 +388,7 @@ namespace WorldMapZoom
             sb.AppendLine("    selectedPersonId = null;");
             sb.AppendLine("  } else {");
             sb.AppendLine("    selectedPersonId = personId;");
+            sb.AppendLine("    console.log('Sending message:', 'person:' + personId);");
             sb.AppendLine("    window.chrome.webview.postMessage('person:' + personId);");
             sb.AppendLine("  }");
             sb.AppendLine("}");

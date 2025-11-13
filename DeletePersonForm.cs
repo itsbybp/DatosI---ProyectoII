@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -284,6 +285,9 @@ namespace WorldMapZoom
 
             try
             {
+                // Eliminar la foto de la persona antes de eliminarla del árbol
+                DeletePersonPhoto(_selectedPerson);
+
                 // Eliminar la persona usando el método de FamilyTree
                 _familyTree.RemovePerson(_selectedPerson.Id);
 
@@ -306,6 +310,29 @@ namespace WorldMapZoom
                     "Error", 
                     MessageBoxButtons.OK, 
                     MessageBoxIcon.Error);
+            }
+        }
+
+        private void DeletePersonPhoto(Person person)
+        {
+            try
+            {
+                // Solo eliminar si la foto es local (en carpeta Images)
+                if (!string.IsNullOrEmpty(person.PhotoUrl) && person.PhotoUrl.StartsWith("Images/"))
+                {
+                    string photoPath = Path.Combine(Environment.CurrentDirectory, person.PhotoUrl);
+                    if (File.Exists(photoPath))
+                    {
+                        File.Delete(photoPath);
+                        System.Diagnostics.Debug.WriteLine($"Foto eliminada: {photoPath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // No mostrar error al usuario, solo registrar en debug
+                System.Diagnostics.Debug.WriteLine($"Error al eliminar foto: {ex.Message}");
+                // La eliminación de la persona continúa aunque falle la eliminación de la foto
             }
         }
 
