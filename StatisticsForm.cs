@@ -71,7 +71,7 @@ namespace WorldMapZoom
                     Color.DarkRed
                 );
 
-                yPos += 40;
+                yPos += 20;
 
                 // Par más cercano
                 var (closest1, closest2, minDist) = graph.GetClosestPair();
@@ -84,7 +84,7 @@ namespace WorldMapZoom
                     Color.DarkGreen
                 );
 
-                yPos += 40;
+                yPos += 20;
 
                 // Distancia promedio
                 double avgDist = graph.GetAverageDistance();
@@ -115,10 +115,14 @@ namespace WorldMapZoom
             _mainPanel.Controls.Add(lblTitle);
             yPos += 35;
 
+            // Calcular altura necesaria según el contenido
+            int lineCount = content.Split('\n').Length;
+            int panelHeight = Math.Max(140, lineCount * 24 + 30);
+
             var panel = new Panel
             {
                 Location = new Point(40, yPos),
-                Size = new Size(600, 120),
+                Size = new Size(600, panelHeight),
                 BackColor = Color.FromArgb(240, 240, 240),
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -130,12 +134,12 @@ namespace WorldMapZoom
                 Font = new Font("Segoe UI", 10),
                 Location = new Point(10, 10),
                 AutoSize = false,
-                Size = new Size(580, 100),
+                Size = new Size(580, panelHeight - 20),
                 TextAlign = ContentAlignment.TopCenter
             };
             panel.Controls.Add(lblContent);
 
-            return yPos + 130;
+            return yPos + panelHeight + 10;
         }
 
         private void AddStatisticLabel(string text, int yPos, Color color)

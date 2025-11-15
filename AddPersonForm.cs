@@ -5,6 +5,9 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.IO;
+using System.Text;
+using Microsoft.Web.WebView2.WinForms;
+using Microsoft.Web.WebView2.Core;
 
 namespace WorldMapZoom
 {
@@ -17,9 +20,6 @@ namespace WorldMapZoom
         private TextBox _txtSecondLastName;
         private TextBox _txtNationalId;
         private DateTimePicker _dtpBirthDate;
-        private CheckBox _chkDeceased;
-        private DateTimePicker _dtpDeathDate;
-        private Label _lblDeathDate;
         private Button _btnSelectPhoto;
         private Label _lblSelectedPhoto;
         private string _selectedPhotoPath;
@@ -31,6 +31,8 @@ namespace WorldMapZoom
         private ComboBox _cmbSpouse;
         private Button _btnSave;
         private Button _btnCancel;
+        private WebView2 _webView;
+        private bool _mapInitialized = false;
 
         public AddPersonForm(FamilyTree familyTree)
         {
@@ -43,13 +45,13 @@ namespace WorldMapZoom
         private void InitializeUI()
         {
             Text = "Agregar Persona";
-            Width = 550;
-            Height = 750;
+            Width = 650;
+            Height = 700;
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MinimumSize = new Size(650, 600);
             BackColor = Color.White;
+            AutoScroll = true;
 
             int yPos = 20;
             int labelWidth = 140;
@@ -87,30 +89,6 @@ namespace WorldMapZoom
             Controls.Add(_dtpBirthDate);
             yPos += 40;
 
-            _chkDeceased = new CheckBox
-            {
-                Text = "La persona ha fallecido",
-                Location = new Point(textBoxX, yPos),
-                Width = textBoxWidth,
-                Checked = false
-            };
-            _chkDeceased.CheckedChanged += ChkDeceased_CheckedChanged;
-            Controls.Add(_chkDeceased);
-            yPos += 35;
-
-            _lblDeathDate = AddLabel("Fecha Defunción *:", 20, yPos, labelWidth);
-            _lblDeathDate.Visible = false;
-            _dtpDeathDate = new DateTimePicker
-            {
-                Location = new Point(textBoxX, yPos),
-                Width = textBoxWidth,
-                Format = DateTimePickerFormat.Short,
-                MaxDate = DateTime.Today,
-                Visible = false
-            };
-            Controls.Add(_dtpDeathDate);
-            yPos += 40;
-
             AddLabel("Foto *:", 20, yPos, labelWidth);
             _btnSelectPhoto = new Button
             {
@@ -137,15 +115,32 @@ namespace WorldMapZoom
             Controls.Add(_lblSelectedPhoto);
             yPos += 40;
 
-            AddLabel("Latitud *:", 20, yPos, labelWidth);
-            _txtLatitude = AddTextBox(textBoxX, yPos, textBoxWidth);
-            _txtLatitude.Text = "9,935";
+            AddLabel("Ubicación (haga clic en el mapa) *:", 20, yPos, labelWidth + 150);
+            yPos += 30;
+            
+            AddLabel("Latitud:", 20, yPos, labelWidth);
+            _txtLatitude = AddTextBox(textBoxX, yPos, 150);
+            _txtLatitude.Text = "9.935";
+            _txtLatitude.ReadOnly = true;
+            _txtLatitude.BackColor = Color.LightGray;
+            
+            AddLabel("Longitud:", textBoxX + 160, yPos, 80);
+            _txtLongitude = AddTextBox(textBoxX + 240, yPos, 150);
+            _txtLongitude.Text = "-84.091";
+            _txtLongitude.ReadOnly = true;
+            _txtLongitude.BackColor = Color.LightGray;
             yPos += 40;
-
-            AddLabel("Longitud *:", 20, yPos, labelWidth);
-            _txtLongitude = AddTextBox(textBoxX, yPos, textBoxWidth);
-            _txtLongitude.Text = "-84,091";
-            yPos += 40;
+            
+            // Agregar WebView2 para el mapa
+            _webView = new WebView2
+            {
+                Location = new Point(20, yPos),
+                Size = new Size(textBoxWidth + labelWidth + 10, 250),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
+            };
+            Controls.Add(_webView);
+            InitializeMapAsync();
+            yPos += 260;
 
             AddLabel("Dirección *:", 20, yPos, labelWidth);
             _txtAddress = AddTextBox(textBoxX, yPos, textBoxWidth);
@@ -158,6 +153,7 @@ namespace WorldMapZoom
                 Width = textBoxWidth,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
+            _cmbParent1.SelectedIndexChanged += CmbParent_SelectedIndexChanged;
             Controls.Add(_cmbParent1);
             yPos += 40;
 
@@ -168,6 +164,7 @@ namespace WorldMapZoom
                 Width = textBoxWidth,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
+            _cmbParent2.SelectedIndexChanged += CmbParent_SelectedIndexChanged;
             Controls.Add(_cmbParent2);
             yPos += 40;
 
@@ -179,7 +176,7 @@ namespace WorldMapZoom
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             Controls.Add(_cmbSpouse);
-            yPos += 50;
+            yPos += 60;
 
             _btnSave = new Button
             {
@@ -214,16 +211,26 @@ namespace WorldMapZoom
             Controls.Add(_btnCancel);
         }
 
-        private void ChkDeceased_CheckedChanged(object sender, EventArgs e)
+        private void CmbParent_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _lblDeathDate.Visible = _chkDeceased.Checked;
-            _dtpDeathDate.Visible = _chkDeceased.Checked;
-            
-            if (_chkDeceased.Checked)
+            // Validar que no se seleccione la misma persona en ambos padres
+            if (_cmbParent1.SelectedIndex > 0 && _cmbParent2.SelectedIndex > 0)
             {
-                _dtpDeathDate.MinDate = _dtpBirthDate.Value.AddDays(1);
-                _dtpDeathDate.MaxDate = DateTime.Today;
-                _dtpDeathDate.Value = DateTime.Today;
+                var parent1 = _cmbParent1.SelectedItem as ComboBoxItem;
+                var parent2 = _cmbParent2.SelectedItem as ComboBoxItem;
+                
+                if (parent1 != null && parent2 != null && parent1.Value == parent2.Value)
+                {
+                    MessageBox.Show("No puede seleccionar la misma persona como Padre/Madre 1 y Padre/Madre 2.", 
+                        "Selección inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    
+                    // Resetear el ComboBox que acaba de cambiar
+                    var changedCombo = sender as ComboBox;
+                    if (changedCombo != null)
+                    {
+                        changedCombo.SelectedIndex = 0;
+                    }
+                }
             }
         }
 
@@ -360,24 +367,6 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar fecha de defunción
-            if (_chkDeceased.Checked)
-            {
-                if (_dtpDeathDate.Value <= _dtpBirthDate.Value)
-                {
-                    MessageBox.Show("La fecha de defunción debe ser posterior a la fecha de nacimiento.", 
-                        "Fecha inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                if (_dtpDeathDate.Value > DateTime.Today)
-                {
-                    MessageBox.Show("La fecha de defunción no puede ser posterior a hoy.", 
-                        "Fecha inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-            }
-
             // Validar coordenadas
             if (!TryParseCoordinate(_txtLatitude.Text, out double lat))
             {
@@ -422,6 +411,20 @@ namespace WorldMapZoom
                 return;
             }
 
+            // Validar que los padres no sean la misma persona
+            if (_cmbParent1.SelectedIndex > 0 && _cmbParent2.SelectedIndex > 0)
+            {
+                var parent1 = _cmbParent1.SelectedItem as ComboBoxItem;
+                var parent2 = _cmbParent2.SelectedItem as ComboBoxItem;
+                if (parent1 != null && parent2 != null && parent1.Value == parent2.Value)
+                {
+                    MessageBox.Show("Los dos padres no pueden ser la misma persona.", "Padres duplicados", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _cmbParent2.Focus();
+                    return;
+                }
+            }
+
             try
             {
                 // Copiar imagen a la carpeta Images con el nombre de la cédula
@@ -445,8 +448,8 @@ namespace WorldMapZoom
                     SecondLastName = _txtSecondLastName.Text.Trim(),
                     NationalId = _txtNationalId.Text.Trim(),
                     BirthDate = _dtpBirthDate.Value,
-                    IsAlive = !_chkDeceased.Checked,
-                    DeathDate = _chkDeceased.Checked ? _dtpDeathDate.Value : (DateTime?)null,
+                    IsAlive = true,
+                    DeathDate = null,
                     PhotoUrl = $"Images/{targetFileName}",
                     Latitude = lat,
                     Longitude = lng,
@@ -523,6 +526,105 @@ namespace WorldMapZoom
             var patron = @"^\d-\d{4}-\d{4}$";
             
             return System.Text.RegularExpressions.Regex.IsMatch(cedula.Trim(), patron);
+        }
+
+        private async void InitializeMapAsync()
+        {
+            try
+            {
+                await _webView.EnsureCoreWebView2Async(null);
+                
+                _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                _webView.CoreWebView2.Settings.IsWebMessageEnabled = true;
+                _webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
+                
+                string html = BuildMapHtml();
+                _webView.NavigateToString(html);
+                _mapInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inicializando mapa: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void WebView_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                string message = e.TryGetWebMessageAsString();
+                
+                if (message.StartsWith("location:"))
+                {
+                    string coords = message.Substring(9);
+                    string[] parts = coords.Split(',');
+                    
+                    if (parts.Length == 2)
+                    {
+                        _txtLatitude.Text = parts[0];
+                        _txtLongitude.Text = parts[1];
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error procesando ubicación: {ex.Message}", "Error", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private string BuildMapHtml()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("<!DOCTYPE html>");
+            sb.AppendLine("<html>");
+            sb.AppendLine("<head>");
+            sb.AppendLine("<meta charset='utf-8' />");
+            sb.AppendLine("<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css' />");
+            sb.AppendLine("<script src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'></script>");
+            sb.AppendLine("<style>");
+            sb.AppendLine("body { margin: 0; padding: 0; }");
+            sb.AppendLine("#map { height: 100vh; cursor: crosshair; }");
+            sb.AppendLine(".selected-marker { z-index: 1000 !important; }");
+            sb.AppendLine("</style>");
+            sb.AppendLine("</head>");
+            sb.AppendLine("<body>");
+            sb.AppendLine("<div id='map'></div>");
+            sb.AppendLine("<script>");
+            
+            var currentLat = _txtLatitude.Text.Replace(",", ".");
+            var currentLng = _txtLongitude.Text.Replace(",", ".");
+            
+            sb.AppendLine($"var map = L.map('map').setView([{currentLat}, {currentLng}], 10);");
+            sb.AppendLine("L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {");
+            sb.AppendLine("  maxZoom: 19,");
+            sb.AppendLine("  attribution: '© OpenStreetMap'");
+            sb.AppendLine("}).addTo(map);");
+            
+            sb.AppendLine("var marker = null;");
+            sb.AppendLine($"marker = L.marker([{currentLat}, {currentLng}]).addTo(map);");
+            sb.AppendLine("marker.bindPopup('Ubicación seleccionada').openPopup();");
+            
+            sb.AppendLine("map.on('click', function(e) {");
+            sb.AppendLine("  var lat = e.latlng.lat.toFixed(6);");
+            sb.AppendLine("  var lng = e.latlng.lng.toFixed(6);");
+            sb.AppendLine("  ");
+            sb.AppendLine("  if (marker) {");
+            sb.AppendLine("    map.removeLayer(marker);");
+            sb.AppendLine("  }");
+            sb.AppendLine("  ");
+            sb.AppendLine("  marker = L.marker([lat, lng]).addTo(map);");
+            sb.AppendLine("  marker.bindPopup('Ubicación seleccionada<br>Lat: ' + lat + '<br>Lng: ' + lng).openPopup();");
+            sb.AppendLine("  ");
+            sb.AppendLine("  window.chrome.webview.postMessage('location:' + lat + ',' + lng);");
+            sb.AppendLine("});");
+            
+            sb.AppendLine("</script>");
+            sb.AppendLine("</body>");
+            sb.AppendLine("</html>");
+            
+            return sb.ToString();
         }
 
         private void BtnSelectPhoto_Click(object sender, EventArgs e)
