@@ -25,6 +25,7 @@ namespace WorldMapZoom
         private PointF _panOffset = new PointF(0, 0);
         private Point _lastMousePos;
         private bool _isPanning = false;
+        private bool _wasDragging = false;
 
         // Constantes de diseño
         private const float BUBBLE_DIAMETER = 100f, HORIZONTAL_SPACING = 150f, VERTICAL_SPACING = 280f;
@@ -86,11 +87,36 @@ namespace WorldMapZoom
 
         private void DrawBox_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
             {
-                _isPanning = true;
-                _lastMousePos = e.Location;
-                _drawBox.Cursor = Cursors.SizeAll;
+                // Verificar si está sobre una burbuja antes de activar el pan
+                float worldX = (e.X - _panOffset.X) / _zoomLevel;
+                float worldY = (e.Y - _panOffset.Y) / _zoomLevel;
+                bool overBubble = false;
+
+                if (e.Button == MouseButtons.Left)
+                {
+                    foreach (var kvp in _nodePositions)
+                    {
+                        var pos = kvp.Value;
+                        float dx = worldX - (pos.X + BUBBLE_DIAMETER / 2);
+                        float dy = worldY - (pos.Y + BUBBLE_DIAMETER / 2);
+
+                        if (Math.Sqrt(dx * dx + dy * dy) <= BUBBLE_DIAMETER / 2)
+                        {
+                            overBubble = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Solo activar pan si no está sobre una burbuja o si es botón medio/derecho
+                if (!overBubble || e.Button != MouseButtons.Left)
+                {
+                    _isPanning = true;
+                    _lastMousePos = e.Location;
+                    _drawBox.Cursor = Cursors.SizeAll;
+                }
             }
         }
 
@@ -101,16 +127,21 @@ namespace WorldMapZoom
                 _panOffset.X += e.X - _lastMousePos.X;
                 _panOffset.Y += e.Y - _lastMousePos.Y;
                 _lastMousePos = e.Location;
+                _wasDragging = true;
                 _drawBox.Invalidate();
             }
         }
 
         private void DrawBox_MouseUp(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
+            if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
             {
                 _isPanning = false;
                 _drawBox.Cursor = Cursors.Default;
+                
+                // Resetear el flag de arrastre después de un breve delay
+                // para permitir que MouseClick lo detecte
+                Task.Delay(50).ContinueWith(_ => _wasDragging = false);
             }
         }
 
@@ -416,7 +447,8 @@ namespace WorldMapZoom
 
         private void DrawBox_MouseClick(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Left) return;
+            // No procesar clicks si se estaba arrastrando
+            if (_wasDragging || e.Button != MouseButtons.Left) return;
 
             float worldX = (e.X - _panOffset.X) / _zoomLevel;
             float worldY = (e.Y - _panOffset.Y) / _zoomLevel;
