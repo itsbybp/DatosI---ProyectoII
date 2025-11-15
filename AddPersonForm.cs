@@ -146,7 +146,7 @@ namespace WorldMapZoom
             _txtAddress = AddTextBox(textBoxX, yPos, textBoxWidth);
             yPos += 40;
 
-            AddLabel("Padre/Madre 1 *:", 20, yPos, labelWidth);
+            AddLabel("Padre/Madre 1:", 20, yPos, labelWidth);
             _cmbParent1 = new ComboBox
             {
                 Location = new Point(textBoxX, yPos),
@@ -157,7 +157,7 @@ namespace WorldMapZoom
             Controls.Add(_cmbParent1);
             yPos += 40;
 
-            AddLabel("Padre/Madre 2 *:", 20, yPos, labelWidth);
+            AddLabel("Padre/Madre 2:", 20, yPos, labelWidth);
             _cmbParent2 = new ComboBox
             {
                 Location = new Point(textBoxX, yPos),
@@ -402,11 +402,14 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar que tenga al menos un padre
-            if (_cmbParent1.SelectedIndex == 0 && _cmbParent2.SelectedIndex == 0)
+            // Validar que tenga al menos un padre O un cónyuge
+            bool tieneAlMenosUnPadre = _cmbParent1.SelectedIndex > 0 || _cmbParent2.SelectedIndex > 0;
+            bool tieneConyugue = _cmbSpouse.SelectedIndex > 0;
+            
+            if (!tieneAlMenosUnPadre && !tieneConyugue)
             {
-                MessageBox.Show("Debe seleccionar al menos un padre/madre.", "Padres requeridos", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Debe seleccionar al menos un padre/madre o un cónyuge.", 
+                    "Relación familiar requerida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _cmbParent1.Focus();
                 return;
             }
