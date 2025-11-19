@@ -341,10 +341,10 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar formato de cédula
+            // Validar formato de cédula (solo números)
             if (!EsCedulaValidaFormato(_txtNationalId.Text))
             {
-                MessageBox.Show("La cédula debe tener el formato #-####-####, donde # es un número del 0 al 9.\nEjemplo: 1-2345-6789", 
+                MessageBox.Show("La cédula solo debe contener números.", 
                     "Formato de cédula inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _txtNationalId.Focus();
                 return;
@@ -524,11 +524,14 @@ namespace WorldMapZoom
             if (string.IsNullOrWhiteSpace(cedula))
                 return false;
 
-            // Patrón regex para formato #-####-####
-            // Donde # es un dígito del 0 al 9
-            var patron = @"^\d-\d{4}-\d{4}$";
+            // Validar que solo contenga números
+            foreach (char c in cedula.Trim())
+            {
+                if (!char.IsDigit(c))
+                    return false;
+            }
             
-            return System.Text.RegularExpressions.Regex.IsMatch(cedula.Trim(), patron);
+            return true;
         }
 
         private async void InitializeMapAsync()
