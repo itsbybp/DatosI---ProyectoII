@@ -402,11 +402,12 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar que tenga al menos un padre O un cónyuge
+            // Validar que tenga al menos un padre O un cónyuge (solo si el árbol no está vacío)
+            bool arbolVacio = _familyTree.GetAllMembers().Count == 0;
             bool tieneAlMenosUnPadre = _cmbParent1.SelectedIndex > 0 || _cmbParent2.SelectedIndex > 0;
             bool tieneConyugue = _cmbSpouse.SelectedIndex > 0;
             
-            if (!tieneAlMenosUnPadre && !tieneConyugue)
+            if (!arbolVacio && !tieneAlMenosUnPadre && !tieneConyugue)
             {
                 MessageBox.Show("Debe seleccionar al menos un padre/madre o un cónyuge.", 
                     "Relación familiar requerida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
