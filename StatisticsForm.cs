@@ -95,10 +95,9 @@ namespace WorldMapZoom
                     $"{avgDist:F1} km",
                     yPos,
                     Color.DarkBlue,
-                    60  // Altura reducida para panel de una línea
+                    60  
                 );
 
-                // Agregar un control invisible para forzar espacio al final
                 var spacer = new Label
                 {
                     Location = new Point(0, yPos),
@@ -127,7 +126,7 @@ namespace WorldMapZoom
             _mainPanel.Controls.Add(lblTitle);
             yPos += 35;
 
-            // Calcular altura necesaria según el contenido o usar altura personalizada
+            // determinar altura del panel según contenido
             int lineCount = content.Split('\n').Length;
             int panelHeight = customHeight ?? Math.Max(140, lineCount * 24 + 30);
 
