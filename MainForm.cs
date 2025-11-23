@@ -135,7 +135,7 @@ namespace WorldMapZoom
             };
             button.FlatAppearance.BorderSize = 0;
 
-            // Efecto hover
+            // cambiar color al pasar el mouse
             Color hoverColor = ControlPaint.Light(customColor ?? Color.FromArgb(0, 122, 204), 0.2f);
             button.MouseEnter += (s, e) => button.BackColor = hoverColor;
             button.MouseLeave += (s, e) => button.BackColor = customColor ?? Color.FromArgb(0, 122, 204);
@@ -151,10 +151,9 @@ namespace WorldMapZoom
 
                 if (_webView.CoreWebView2 != null)
                 {
-                    // Permitir acceso a archivos locales
                     _webView.CoreWebView2.Settings.AreHostObjectsAllowed = true;
                     _webView.CoreWebView2.Settings.IsWebMessageEnabled = true;
-                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = true; // Habilitar temporalmente para debug
+                    _webView.CoreWebView2.Settings.AreDevToolsEnabled = false;
                     
                     _webView.CoreWebView2.WebMessageReceived += WebView_WebMessageReceived;
                     RefreshMap();
@@ -207,7 +206,7 @@ namespace WorldMapZoom
                 var otherPerson = graph.GetPerson(kvp.Key);
                 if (otherPerson != null)
                 {
-                    // Usar InvariantCulture para garantizar formato con punto decimal
+                    // Formato invariante para coords con punto decimal
                     var lat1 = person.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
                     var lng1 = person.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
                     var lat2 = otherPerson.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
@@ -222,11 +221,11 @@ namespace WorldMapZoom
                     script.AppendLine("}).addTo(map);");
                     script.AppendLine("window.distanceLines.push(line);");
                     
-                    // Calcular el punto medio de la línea para mostrar la distancia
+                    // punto medio entre ambas coordenadas
                     script.AppendLine($"var midLat = ({lat1} + {lat2}) / 2;");
                     script.AppendLine($"var midLng = ({lng1} + {lng2}) / 2;");
                     
-                    // Crear un marcador de texto en el punto medio
+                    // Etiqueta con la distancia calculada
                     var distanceText = kvp.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
                     script.AppendLine($"var distanceIcon = L.divIcon({{");
                     script.AppendLine($"  html: '<div style=\"min-width: 60px; text-align: center; font-size: 12px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;\">{distanceText} km</div>',");
@@ -373,7 +372,6 @@ namespace WorldMapZoom
             sb.AppendLine("      className: ''");
             sb.AppendLine("    });");
             sb.AppendLine("    m.marker.setIcon(icon);");
-            sb.AppendLine("    // Re-attach click event after icon update");
             sb.AppendLine("    m.marker.off('click');");
             sb.AppendLine("    m.marker.on('click', function() { selectPerson(m.user.id); });");
             sb.AppendLine("  });");
@@ -434,7 +432,7 @@ namespace WorldMapZoom
             if (string.IsNullOrEmpty(photoUrl))
                 return photoUrl;
 
-            // Si la URL empieza con "Images/", convertirla a data URL base64
+            // Convertir rutas locales a base64
             if (photoUrl.StartsWith("Images/"))
             {
                 try
@@ -451,11 +449,11 @@ namespace WorldMapZoom
                 }
                 catch
                 {
-                    // Si hay error, devolver una imagen placeholder o la URL original
+                    //  en caso de error mantener URL original
                 }
             }
 
-            // Si es una URL completa (http/https), devolverla tal como está
+            // URLs externas se mantienen sin cambios
             return photoUrl;
         }
 

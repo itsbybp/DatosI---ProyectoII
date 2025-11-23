@@ -13,7 +13,7 @@ namespace WorldMapZoom
 
         public static string GetDefaultJsonPath()
         {
-            // Usar el directorio de trabajo actual (configurado como StartWorkingDirectory)
+            // buscar usuarios.json en directorio de trabajo
             string workingDir = Environment.CurrentDirectory;
             string jsonPath = Path.Combine(workingDir, "usuarios.json");
             
@@ -22,7 +22,7 @@ namespace WorldMapZoom
                 return jsonPath;
             }
             
-            // Fallback: buscar desde el directorio base si no se encuentra en working directory
+            // Intentar buscar desde carpeta base hacia arriba
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             DirectoryInfo current = new DirectoryInfo(baseDir);
             while (current != null && current.Parent != null)
@@ -35,7 +35,7 @@ namespace WorldMapZoom
                 current = current.Parent;
             }
             
-            // Último fallback: crear en el directorio de trabajo
+            // Si no existe, crear en working dir
             return jsonPath;
         }
 
@@ -57,17 +57,17 @@ namespace WorldMapZoom
             if (!root.TryGetProperty("people", out var peopleArray))
                 throw new Exception("El JSON no contiene la propiedad 'people'");
 
-            // Limpiar árbol actual
+            // Resetear árbol antes de cargar
             familyTree.Clear();
 
-            // Primera pasada: crear todas las personas
+            // Agregar todas las personas primero
             foreach (var personElement in peopleArray.EnumerateArray())
             {
                 var person = ParsePerson(personElement);
                 familyTree.AddPerson(person);
             }
 
-            // Segunda pasada: crear las relaciones
+            // Crear relaciones entre ellas
             foreach (var personElement in peopleArray.EnumerateArray())
             {
                 string personId = personElement.GetProperty("id").GetString();
@@ -99,7 +99,7 @@ namespace WorldMapZoom
         {
             string id = element.GetProperty("id").GetString();
             
-            // Parsear nombre completo
+            // Separar nombre completo en partes
             string fullName = element.GetProperty("name").GetString();
             var nameParts = fullName.Split(' ');
             

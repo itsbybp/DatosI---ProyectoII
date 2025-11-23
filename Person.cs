@@ -20,7 +20,7 @@ namespace WorldMapZoom
         public double Longitude { get; set; }
         public string Address { get; set; }
 
-        // Relaciones familiares
+        // IDs de familiares relacionados
         public List<string> ParentIds { get; set; }
         public List<string> SpouseIds { get; set; }
         public List<string> ChildrenIds { get; set; }

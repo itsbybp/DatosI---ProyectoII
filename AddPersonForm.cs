@@ -129,7 +129,7 @@ namespace WorldMapZoom
             _txtLongitude.TextChanged += CoordinateTextBox_TextChanged;
             yPos += 40;
             
-            // Agregar WebView2 para el mapa
+            // WebView2 para el mapa
             _webView = new WebView2
             {
                 Location = new Point(20, yPos),
@@ -211,7 +211,7 @@ namespace WorldMapZoom
 
         private void CmbParent_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Validar que no se seleccione la misma persona en ambos padres
+            // no permitir la misma persona como ambos padres
             if (_cmbParent1.SelectedIndex > 0 && _cmbParent2.SelectedIndex > 0)
             {
                 var parent1 = _cmbParent1.SelectedItem as ComboBoxItem;
@@ -222,7 +222,6 @@ namespace WorldMapZoom
                     MessageBox.Show("No puede seleccionar la misma persona como Padre/Madre 1 y Padre/Madre 2.", 
                         "Selección inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     
-                    // Resetear el ComboBox que acaba de cambiar
                     var changedCombo = sender as ComboBox;
                     if (changedCombo != null)
                     {
@@ -357,7 +356,7 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar fecha de nacimiento
+            //Validar fecha de nacimiento
             if (_dtpBirthDate.Value > DateTime.Today)
             {
                 MessageBox.Show("La fecha de nacimiento no puede ser posterior a hoy.", 
@@ -429,7 +428,7 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Validar que los padres no sean la misma persona
+            // validar que los padres no sean la misma persona
             if (_cmbParent1.SelectedIndex > 0 && _cmbParent2.SelectedIndex > 0)
             {
                 var parent1 = _cmbParent1.SelectedItem as ComboBoxItem;
@@ -445,7 +444,6 @@ namespace WorldMapZoom
 
             try
             {
-                // Copiar imagen a la carpeta Images con el nombre de la cédula
                 string imagesFolder = Path.Combine(Environment.CurrentDirectory, "Images");
                 if (!Directory.Exists(imagesFolder))
                 {
@@ -572,7 +570,6 @@ namespace WorldMapZoom
 
         private void CoordinateTextBox_TextChanged(object sender, EventArgs e)
         {
-            // Actualizar el mapa cuando cambian las coordenadas manualmente
             if (_mapInitialized && TryParseCoordinate(_txtLatitude.Text, out double lat) && 
                 TryParseCoordinate(_txtLongitude.Text, out double lng))
             {

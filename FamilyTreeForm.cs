@@ -89,7 +89,7 @@ namespace WorldMapZoom
         {
             if (e.Button == MouseButtons.Left || e.Button == MouseButtons.Middle || e.Button == MouseButtons.Right)
             {
-                // Verificar si está sobre una burbuja antes de activar el pan
+                // Revisar si el click fue sobre un nodo
                 float worldX = (e.X - _panOffset.X) / _zoomLevel;
                 float worldY = (e.Y - _panOffset.Y) / _zoomLevel;
                 bool overBubble = false;
@@ -110,7 +110,7 @@ namespace WorldMapZoom
                     }
                 }
 
-                // Solo activar pan si no está sobre una burbuja o si es botón medio/derecho
+                // Habilitar pan solo si no hay nodo debajo
                 if (!overBubble || e.Button != MouseButtons.Left)
                 {
                     _isPanning = true;
@@ -139,8 +139,7 @@ namespace WorldMapZoom
                 _isPanning = false;
                 _drawBox.Cursor = Cursors.Default;
                 
-                // Resetear el flag de arrastre después de un breve delay
-                // para permitir que MouseClick lo detecte
+                // Pequeño delay para detectar clicks vs arrastre
                 Task.Delay(50).ContinueWith(_ => _wasDragging = false);
             }
         }
@@ -326,14 +325,14 @@ namespace WorldMapZoom
                         : pos.X + BUBBLE_DIAMETER / 2;
                     float baseY = pos.Y + BUBBLE_DIAMETER;
 
-                    // Calcular el punto medio vertical hacia los hijos
+                    // calcular mitad de distancia a los hijos
                     float minChildY = childrenInTree.Min(c => _nodePositions[c.Id].Y);
                     float midY = baseY + (minChildY - baseY) / 2;
 
                     // Línea vertical gris desde la pareja hasta el punto medio
                     g.DrawLine(pen, baseX, baseY, baseX, midY);
 
-                    // Dibujar líneas diagonales desde el punto medio hacia cada hijo
+                    // conectar punto medio con cada hijo
                     foreach (var child in childrenInTree)
                     {
                         var childPos = _nodePositions[child.Id];
@@ -385,7 +384,7 @@ namespace WorldMapZoom
                 }
                 else
                 {
-                    // Solo mostrar iniciales si no hay foto
+                    // Iniciales cuando no hay foto disponible
                     string initials = $"{person.FirstName[0]}{person.FirstLastName[0]}";
                     using (var font = new Font("Arial", 18, FontStyle.Bold))
                     using (var brush = new SolidBrush(Color.White))
@@ -413,7 +412,7 @@ namespace WorldMapZoom
 
             try
             {
-                // Si es una ruta local (empieza con "Images/"), cargar desde archivo
+                // Cargar desde directorio local
                 if (person.PhotoUrl.StartsWith("Images/"))
                 {
                     string localPath = System.IO.Path.Combine(Environment.CurrentDirectory, person.PhotoUrl);
@@ -423,7 +422,7 @@ namespace WorldMapZoom
                         return _photoCache[person.Id];
                     }
                 }
-                // Si es una URL remota, descargar
+                // Descargar imagen de internet
                 else if (person.PhotoUrl.StartsWith("http"))
                 {
                     using (var client = new HttpClient())

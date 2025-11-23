@@ -50,7 +50,7 @@ namespace WorldMapZoom
 
             var person = members[personId];
 
-            // Eliminar referencias en padres
+            // Quitar de la lista de hijos de los padres
             foreach (var parentId in person.ParentIds.ToList())
             {
                 if (members.ContainsKey(parentId))
@@ -59,7 +59,7 @@ namespace WorldMapZoom
                 }
             }
 
-            // Eliminar referencias en c�nyuges
+            // Remover relación de pareja mutua
             foreach (var spouseId in person.SpouseIds.ToList())
             {
                 if (members.ContainsKey(spouseId))
@@ -68,7 +68,7 @@ namespace WorldMapZoom
                 }
             }
 
-            // Eliminar referencias en hijos
+            // Quitar de la lista de padres de los hijos
             foreach (var childId in person.ChildrenIds.ToList())
             {
                 if (members.ContainsKey(childId))
@@ -77,10 +77,10 @@ namespace WorldMapZoom
                 }
             }
 
-            // Eliminar la persona del diccionario
+            // sacar persona del árbol
             members.Remove(personId);
 
-            // Reconstruir el grafo
+            // Recalcular distancias
             graph = new Graph();
             foreach (var p in members.Values)
             {

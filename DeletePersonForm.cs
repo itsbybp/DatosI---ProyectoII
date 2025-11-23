@@ -70,7 +70,7 @@ namespace WorldMapZoom
             Controls.Add(_cmbPerson);
             yPos += 50;
 
-            // Panel de información de la persona seleccionada
+            // panel de información de la persona seleccionada
             _infoPanel = new Panel
             {
                 Location = new Point(30, yPos),
@@ -250,13 +250,10 @@ namespace WorldMapZoom
 
             try
             {
-                // Eliminar la foto de la persona antes de eliminarla del árbol
                 DeletePersonPhoto(_selectedPerson);
 
-                // Eliminar la persona usando el método de FamilyTree
                 _familyTree.RemovePerson(_selectedPerson.Id);
 
-                // Guardar cambios
                 DataLoader.SaveToJson(_familyTree);
 
                 MessageBox.Show(
@@ -282,7 +279,7 @@ namespace WorldMapZoom
         {
             try
             {
-                // Solo eliminar si la foto es local (en carpeta Images)
+                // Eliminar solo imágenes de carpeta local
                 if (!string.IsNullOrEmpty(person.PhotoUrl) && person.PhotoUrl.StartsWith("Images/"))
                 {
                     string photoPath = Path.Combine(Environment.CurrentDirectory, person.PhotoUrl);
@@ -295,9 +292,8 @@ namespace WorldMapZoom
             }
             catch (Exception ex)
             {
-                // No mostrar error al usuario, solo registrar en debug
+                // log del error sin interrumpir el proceso
                 System.Diagnostics.Debug.WriteLine($"Error al eliminar foto: {ex.Message}");
-                // La eliminación de la persona continúa aunque falle la eliminación de la foto
             }
         }
 

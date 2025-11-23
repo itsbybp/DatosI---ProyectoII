@@ -34,7 +34,7 @@ namespace WorldMapZoom
 
         public void BuildDistanceGraph()
         {
-            // Construir el grafo completo con todas las distancias
+            // Construir grafo con distancias entre todas las personas
             var personList = nodes.Values.ToList();
             
             foreach (var person1 in personList)
