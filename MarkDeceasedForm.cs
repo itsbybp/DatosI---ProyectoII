@@ -145,7 +145,12 @@ namespace WorldMapZoom
             if (_cmbPerson.SelectedItem is ComboBoxItem item)
             {
                 _selectedPerson = item.Person;
-                _dtpDeathDate.MinDate = _selectedPerson.BirthDate.AddDays(1);
+                DateTime minDate = _selectedPerson.BirthDate.AddDays(1);
+                if (minDate > DateTime.Today)
+                {
+                    minDate = DateTime.Today;
+                }
+                _dtpDeathDate.MinDate = minDate;
                 _dtpDeathDate.Value = DateTime.Today;
             }
         }

@@ -36,7 +36,7 @@
       "relations": {
         "parents": ["gen0-padre"],
         "spouses": [],
-        "children": ["024eb9aa-36dd-4b42-b23e-7612e11539a4", "173c2f44-dbb7-4a9d-8a58-e75ee2b7711c", "6b5a3e4e-171c-4848-a568-c6b5a88ab18e"]
+        "children": ["024eb9aa-36dd-4b42-b23e-7612e11539a4", "173c2f44-dbb7-4a9d-8a58-e75ee2b7711c", "6b5a3e4e-171c-4848-a568-c6b5a88ab18e", "134496cf-9710-46d3-8bdc-06278553fdd0", "287efb58-d089-4cf1-85bb-8d86b4ae5c83"]
       }
     },
     {
@@ -74,7 +74,7 @@
       },
       "relations": {
         "parents": ["gen0-padre"],
-        "spouses": ["gen0-padre"],
+        "spouses": ["gen0-padre", "dbe78895-ab67-4822-a833-6433f04e5af1"],
         "children": []
       }
     },
@@ -132,6 +132,64 @@
       "relations": {
         "parents": ["024eb9aa-36dd-4b42-b23e-7612e11539a4"],
         "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "134496cf-9710-46d3-8bdc-06278553fdd0",
+      "name": "Gertrudis Villalobos Loría",
+      "national_id": "123123123",
+      "birth_date": "2025-11-23",
+      "alive": true,
+      "age": 0,
+      "photo_url": "Images/123123123.jpg",
+      "location": {
+        "lat": 10.082446,
+        "lng": -84.468384,
+        "address": "San Ramón, 300 m norte de la iglesia San Esquivel"
+      },
+      "relations": {
+        "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "287efb58-d089-4cf1-85bb-8d86b4ae5c83",
+      "name": "Irina Guillen Morales",
+      "national_id": "121212312",
+      "birth_date": "2000-11-22",
+      "death_date": "2014-11-23",
+      "alive": false,
+      "age": 14,
+      "photo_url": "Images/121212312.jpeg",
+      "location": {
+        "lat": 9.905274,
+        "lng": -83.693848,
+        "address": "Turrialba"
+      },
+      "relations": {
+        "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "dbe78895-ab67-4822-a833-6433f04e5af1",
+      "name": "Gerardo Brenes Brenes",
+      "national_id": "10010199",
+      "birth_date": "2025-11-23",
+      "alive": true,
+      "age": 0,
+      "photo_url": "Images/10010199.jpeg",
+      "location": {
+        "lat": 9.798384,
+        "lng": -84.182739,
+        "address": "San Ignacio"
+      },
+      "relations": {
+        "parents": [],
+        "spouses": ["486cb062-c811-4a0d-96dd-ebecd4c0739f"],
         "children": []
       }
     }

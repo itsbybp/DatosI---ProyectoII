@@ -352,12 +352,12 @@ namespace WorldMapZoom
             sb.AppendLine("    iconAnchor: [size/2, size/2],");
             sb.AppendLine("    className: ''");
             sb.AppendLine("  });");
-            sb.AppendLine("  var popupContent = '<b>' + user.name + '</b><br>' + user.address + '<br>Cédula: ' + user.national_id + '<br>';");
+            sb.AppendLine("  var popupContent = '<b>' + user.name + '</b><br>Ubicación: ' + user.address + '<br>Cédula: ' + user.national_id + '<br>';");
             sb.AppendLine("  if (user.alive) { popupContent += 'Edad: ' + user.age + ' años'; }");
             sb.AppendLine("  else { popupContent += '† ' + user.age + ' años'; }");
             sb.AppendLine("  var marker = L.marker([user.lat, user.lng], {icon: icon});");
             sb.AppendLine("  marker.bindPopup(popupContent);");
-            sb.AppendLine("  marker.on('click', function() { selectPerson(user.id); });");
+            sb.AppendLine("  marker.on('click', function(e) { map.closePopup(); marker.openPopup(); selectPerson(user.id); });");;;
             sb.AppendLine("  marker.addTo(map);");
             sb.AppendLine("  markers.push({marker: marker, user: user});");
             sb.AppendLine("});");
@@ -373,7 +373,7 @@ namespace WorldMapZoom
             sb.AppendLine("    });");
             sb.AppendLine("    m.marker.setIcon(icon);");
             sb.AppendLine("    m.marker.off('click');");
-            sb.AppendLine("    m.marker.on('click', function() { selectPerson(m.user.id); });");
+            sb.AppendLine("    m.marker.on('click', function(e) { map.closePopup(); m.marker.openPopup(); selectPerson(m.user.id); });");
             sb.AppendLine("  });");
             sb.AppendLine("});");
 
