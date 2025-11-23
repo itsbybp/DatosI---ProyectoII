@@ -13,7 +13,6 @@ namespace WorldMapZoom
         private Button _btnDelete;
         private Button _btnCancel;
         private Person _selectedPerson;
-        private Label _lblWarning;
         private Panel _infoPanel;
 
         public DeletePersonForm(FamilyTree familyTree)
@@ -27,7 +26,7 @@ namespace WorldMapZoom
         {
             Text = "Eliminar Persona del Árbol Genealógico";
             Width = 600;
-            Height = 500;
+            Height = 420;
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -82,27 +81,6 @@ namespace WorldMapZoom
             };
             Controls.Add(_infoPanel);
             yPos += 160;
-
-            // Advertencia
-            _lblWarning = new Label
-            {
-                Text = "⚠️ ADVERTENCIA: Esta acción no se puede deshacer.\n\n" +
-                       "Al eliminar esta persona también se eliminarán:\n" +
-                       "• Todas sus relaciones familiares\n" +
-                       "• Referencias en otros miembros del árbol",
-                Location = new Point(30, yPos),
-                Width = 540,
-                Height = 90,
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(192, 57, 43),
-                BackColor = Color.FromArgb(255, 243, 224),
-                BorderStyle = BorderStyle.FixedSingle,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(10),
-                Visible = false
-            };
-            Controls.Add(_lblWarning);
-            yPos += 100;
 
             // Botones
             _btnDelete = new Button
@@ -178,7 +156,6 @@ namespace WorldMapZoom
             {
                 _selectedPerson = null;
                 _infoPanel.Visible = false;
-                _lblWarning.Visible = false;
                 _btnDelete.Enabled = false;
                 return;
             }
@@ -188,7 +165,6 @@ namespace WorldMapZoom
                 _selectedPerson = item.Person;
                 UpdateInfoPanel(_selectedPerson);
                 _infoPanel.Visible = true;
-                _lblWarning.Visible = true;
                 _btnDelete.Enabled = true;
             }
         }
@@ -257,7 +233,7 @@ namespace WorldMapZoom
                 return;
             }
 
-            // Mensaje de confirmación
+            // Mensaje de confirmación único
             var result = MessageBox.Show(
                 $"¿Está completamente seguro de que desea eliminar a:\n\n" +
                 $"👤 {_selectedPerson.FullName}\n" +
@@ -270,17 +246,6 @@ namespace WorldMapZoom
                 MessageBoxDefaultButton.Button2);
 
             if (result != DialogResult.Yes)
-                return;
-
-            // Segunda confirmación
-            var secondConfirm = MessageBox.Show(
-                $"¿Realmente desea continuar con la eliminación de {_selectedPerson.FullName}?",
-                "Última Confirmación", 
-                MessageBoxButtons.YesNo, 
-                MessageBoxIcon.Question,
-                MessageBoxDefaultButton.Button2);
-
-            if (secondConfirm != DialogResult.Yes)
                 return;
 
             try

@@ -44,9 +44,9 @@ namespace WorldMapZoom
         {
             this.Text = "Árbol Genealógico - Usa rueda del mouse para zoom";
             this.WindowState = FormWindowState.Maximized;
-            this.BackColor = Color.FromArgb(245, 245, 250);
+            this.BackColor = Color.FromArgb(45, 45, 48);
 
-            _drawBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            _drawBox = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(45, 45, 48) };
             _drawBox.GetType().InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
                 null, _drawBox, new object[] { true });
@@ -281,7 +281,7 @@ namespace WorldMapZoom
         {
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            e.Graphics.Clear(Color.White);
+            e.Graphics.Clear(Color.FromArgb(45, 45, 48));
             e.Graphics.ScaleTransform(_zoomLevel, _zoomLevel);
             e.Graphics.TranslateTransform(_panOffset.X / _zoomLevel, _panOffset.Y / _zoomLevel);
 
@@ -397,7 +397,7 @@ namespace WorldMapZoom
 
                 string displayName = person.FirstName.Length > 12 ? person.FirstName.Substring(0, 12) + "..." : person.FirstName;
                 using (var font = new Font("Segoe UI", 9, FontStyle.Bold))
-                using (var brush = new SolidBrush(Color.FromArgb(33, 37, 41)))
+                using (var brush = new SolidBrush(Color.White))
                 using (var format = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
                 {
                     g.DrawString(displayName, font, brush, new RectangleF(pos.X - 25, pos.Y + BUBBLE_DIAMETER + 5, BUBBLE_DIAMETER + 50, 20), format);

@@ -36,7 +36,7 @@
       "relations": {
         "parents": ["gen0-padre"],
         "spouses": [],
-        "children": ["024eb9aa-36dd-4b42-b23e-7612e11539a4", "02dbf95e-d36d-4fd4-a6a9-b6f9075eab73", "5e3a9589-c687-4cde-9b59-bc446d880438"]
+        "children": ["024eb9aa-36dd-4b42-b23e-7612e11539a4", "173c2f44-dbb7-4a9d-8a58-e75ee2b7711c", "6b5a3e4e-171c-4848-a568-c6b5a88ab18e"]
       }
     },
     {
@@ -55,26 +55,7 @@
       "relations": {
         "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
         "spouses": [],
-        "children": []
-      }
-    },
-    {
-      "id": "02dbf95e-d36d-4fd4-a6a9-b6f9075eab73",
-      "name": "Gladys Gomez Bolaños",
-      "national_id": "300001111",
-      "birth_date": "2025-11-14",
-      "alive": true,
-      "age": 0,
-      "photo_url": "Images/300001111.png",
-      "location": {
-        "lat": 9.922015,
-        "lng": -84.06395,
-        "address": "San José"
-      },
-      "relations": {
-        "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
-        "spouses": ["f233816a-0a50-427e-877d-8eb8d68709c9"],
-        "children": []
+        "children": ["2feb8df8-096e-4838-a3b5-d61ad0db626c"]
       }
     },
     {
@@ -82,7 +63,8 @@
       "name": "Laura Miranda Fallas",
       "national_id": "133330101",
       "birth_date": "2025-11-14",
-      "alive": true,
+      "death_date": "2025-11-22",
+      "alive": false,
       "age": 0,
       "photo_url": "Images/133330101.png",
       "location": {
@@ -97,39 +79,58 @@
       }
     },
     {
-      "id": "f233816a-0a50-427e-877d-8eb8d68709c9",
-      "name": "Hector Morales Martinez",
-      "national_id": "111112223",
-      "birth_date": "2025-11-14",
+      "id": "173c2f44-dbb7-4a9d-8a58-e75ee2b7711c",
+      "name": "Hector Avila Vargas",
+      "national_id": "111110001",
+      "birth_date": "2000-11-23",
       "alive": true,
-      "age": 0,
-      "photo_url": "Images/111112223.jpeg",
+      "age": 25,
+      "photo_url": "Images/111110001.jpg",
       "location": {
-        "lat": 9.863334,
-        "lng": -83.93692,
-        "address": "Cartago"
+        "lat": 9.527623,
+        "lng": -84.339294,
+        "address": "Parrita"
       },
       "relations": {
-        "parents": [],
-        "spouses": ["02dbf95e-d36d-4fd4-a6a9-b6f9075eab73"],
+        "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
+        "spouses": [],
         "children": []
       }
     },
     {
-      "id": "5e3a9589-c687-4cde-9b59-bc446d880438",
-      "name": "Dylan Vargas Herrera",
-      "national_id": "1010101111",
-      "birth_date": "2025-11-19",
+      "id": "6b5a3e4e-171c-4848-a568-c6b5a88ab18e",
+      "name": "Gabriela Cordero Villalobos",
+      "national_id": "1111122222",
+      "birth_date": "2025-11-23",
       "alive": true,
       "age": 0,
-      "photo_url": "Images/1010101111.jpg",
+      "photo_url": "Images/1111122222.jpg",
       "location": {
-        "lat": 9.837626,
-        "lng": -83.868256,
-        "address": "Paraíso"
+        "lat": 1000000000000,
+        "lng": -84.023438,
+        "address": "Costa Rica"
       },
       "relations": {
         "parents": ["5c8f0a2a-69da-404b-91d2-ad4ccf45fffb"],
+        "spouses": [],
+        "children": []
+      }
+    },
+    {
+      "id": "2feb8df8-096e-4838-a3b5-d61ad0db626c",
+      "name": "Javier Villalobos Cordero",
+      "national_id": "12121212",
+      "birth_date": "2025-11-23",
+      "alive": true,
+      "age": 0,
+      "photo_url": "Images/12121212.jpg",
+      "location": {
+        "lat": 45,
+        "lng": 90,
+        "address": "Asia"
+      },
+      "relations": {
+        "parents": ["024eb9aa-36dd-4b42-b23e-7612e11539a4"],
         "spouses": [],
         "children": []
       }

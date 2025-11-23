@@ -48,8 +48,8 @@ namespace WorldMapZoom
             Width = 650;
             Height = 700;
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.Sizable;
-            MinimumSize = new Size(650, 600);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
             BackColor = Color.White;
             AutoScroll = true;
 
@@ -121,14 +121,12 @@ namespace WorldMapZoom
             AddLabel("Latitud:", 20, yPos, labelWidth);
             _txtLatitude = AddTextBox(textBoxX, yPos, 150);
             _txtLatitude.Text = "9.935";
-            _txtLatitude.ReadOnly = true;
-            _txtLatitude.BackColor = Color.LightGray;
+            _txtLatitude.TextChanged += CoordinateTextBox_TextChanged;
             
             AddLabel("Longitud:", textBoxX + 160, yPos, 80);
             _txtLongitude = AddTextBox(textBoxX + 240, yPos, 150);
             _txtLongitude.Text = "-84.091";
-            _txtLongitude.ReadOnly = true;
-            _txtLongitude.BackColor = Color.LightGray;
+            _txtLongitude.TextChanged += CoordinateTextBox_TextChanged;
             yPos += 40;
             
             // Agregar WebView2 para el mapa
@@ -376,10 +374,26 @@ namespace WorldMapZoom
                 return;
             }
 
+            if (lat < -90 || lat > 90)
+            {
+                MessageBox.Show("La latitud debe estar entre -90 y 90 grados.", 
+                    "Latitud fuera de rango", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtLatitude.Focus();
+                return;
+            }
+
             if (!TryParseCoordinate(_txtLongitude.Text, out double lng))
             {
                 MessageBox.Show("La longitud debe ser un número válido. Use coma (,) como separador decimal.", 
                     "Coordenada inválida", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _txtLongitude.Focus();
+                return;
+            }
+
+            if (lng < -180 || lng > 180)
+            {
+                MessageBox.Show("La longitud debe estar entre -180 y 180 grados.", 
+                    "Longitud fuera de rango", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _txtLongitude.Focus();
                 return;
             }
@@ -553,6 +567,43 @@ namespace WorldMapZoom
             {
                 MessageBox.Show($"Error inicializando mapa: {ex.Message}", "Error", 
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void CoordinateTextBox_TextChanged(object sender, EventArgs e)
+        {
+            // Actualizar el mapa cuando cambian las coordenadas manualmente
+            if (_mapInitialized && TryParseCoordinate(_txtLatitude.Text, out double lat) && 
+                TryParseCoordinate(_txtLongitude.Text, out double lng))
+            {
+                UpdateMapMarker(lat, lng);
+            }
+        }
+
+        private void UpdateMapMarker(double lat, double lng)
+        {
+            try
+            {
+                if (_webView?.CoreWebView2 != null)
+                {
+                    var latStr = lat.ToString("F6", CultureInfo.InvariantCulture);
+                    var lngStr = lng.ToString("F6", CultureInfo.InvariantCulture);
+                    
+                    string script = $@"
+                        if (marker) {{
+                            map.removeLayer(marker);
+                        }}
+                        marker = L.marker([{latStr}, {lngStr}]).addTo(map);
+                        marker.bindPopup('Ubicación seleccionada<br>Lat: {latStr}<br>Lng: {lngStr}').openPopup();
+                        map.setView([{latStr}, {lngStr}], map.getZoom());
+                    ";
+                    
+                    _webView.CoreWebView2.ExecuteScriptAsync(script);
+                }
+            }
+            catch
+            {
+                // Ignorar errores de actualización del mapa
             }
         }
 
