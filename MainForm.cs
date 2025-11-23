@@ -215,9 +215,10 @@ namespace WorldMapZoom
                     
                     script.AppendLine($"console.log('Creating line from [{lat1}, {lng1}] to [{lat2}, {lng2}]');");
                     script.AppendLine($"var line = L.polyline([[{lat1}, {lng1}], [{lat2}, {lng2}]], {{");
-                    script.AppendLine("  color: 'black',");
+                    script.AppendLine("  color: '#e74c3c',");
                     script.AppendLine("  weight: 3,");
-                    script.AppendLine("  opacity: 0.8");
+                    script.AppendLine("  opacity: 0.8,");
+                    script.AppendLine("  dashArray: '10, 8'");
                     script.AppendLine("}).addTo(map);");
                     script.AppendLine("window.distanceLines.push(line);");
                     
@@ -230,8 +231,8 @@ namespace WorldMapZoom
                     script.AppendLine($"var distanceIcon = L.divIcon({{");
                     script.AppendLine($"  html: '<div style=\"min-width: 60px; text-align: center; font-size: 12px; font-weight: bold; color: black; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;\">{distanceText} km</div>',");
                     script.AppendLine("  className: 'distance-label',");
-                    script.AppendLine("  iconSize: [null, null],");
-                    script.AppendLine("  iconAnchor: [null, null]");
+                    script.AppendLine("  iconSize: [60, 20],");
+                    script.AppendLine("  iconAnchor: [30, 10]");
                     script.AppendLine("});");
                     script.AppendLine($"var distanceMarker = L.marker([midLat, midLng], {{icon: distanceIcon}}).addTo(map);");
                     script.AppendLine("window.distanceLines.push(distanceMarker);");
@@ -318,7 +319,7 @@ namespace WorldMapZoom
             sb.AppendLine("<link rel='stylesheet' href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'/>");
             sb.AppendLine("<style>");
             sb.AppendLine("html,body,#map{height:100%;margin:0;padding:0;}");
-            sb.AppendLine(".user-photo{border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);object-fit:cover;cursor:pointer;transition:all 0.3s;}");
+            sb.AppendLine(".user-photo{display:block;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);object-fit:cover;cursor:pointer;transition:all 0.3s;aspect-ratio:1/1;}");
             sb.AppendLine(".user-photo.deceased{opacity:0.5;border-color:#666;}");
             sb.AppendLine(".user-photo:hover{border-color:#007acc;transform:scale(1.15);}");
             sb.AppendLine("</style>");

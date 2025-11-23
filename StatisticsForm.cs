@@ -23,6 +23,8 @@ namespace WorldMapZoom
             Width = 700;
             Height = 550;
             StartPosition = FormStartPosition.CenterParent;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
             BackColor = Color.White;
 
             _mainPanel = new Panel
@@ -88,12 +90,22 @@ namespace WorldMapZoom
 
                 // Distancia promedio
                 double avgDist = graph.GetAverageDistance();
-                AddStatisticSection(
+                yPos = AddStatisticSection(
                     "📊 DISTANCIA PROMEDIO",
-                    $"{avgDist:F2} km",
+                    $"{avgDist:F1} km",
                     yPos,
-                    Color.DarkBlue
+                    Color.DarkBlue,
+                    60  // Altura reducida para panel de una línea
                 );
+
+                // Agregar un control invisible para forzar espacio al final
+                var spacer = new Label
+                {
+                    Location = new Point(0, yPos),
+                    Size = new Size(1, 60),
+                    BackColor = Color.Transparent
+                };
+                _mainPanel.Controls.Add(spacer);
             }
             catch (Exception ex)
             {
@@ -102,7 +114,7 @@ namespace WorldMapZoom
             }
         }
 
-        private int AddStatisticSection(string title, string content, int yPos, Color titleColor)
+        private int AddStatisticSection(string title, string content, int yPos, Color titleColor, int? customHeight = null)
         {
             var lblTitle = new Label
             {
@@ -115,9 +127,9 @@ namespace WorldMapZoom
             _mainPanel.Controls.Add(lblTitle);
             yPos += 35;
 
-            // Calcular altura necesaria según el contenido
+            // Calcular altura necesaria según el contenido o usar altura personalizada
             int lineCount = content.Split('\n').Length;
-            int panelHeight = Math.Max(140, lineCount * 24 + 30);
+            int panelHeight = customHeight ?? Math.Max(140, lineCount * 24 + 30);
 
             var panel = new Panel
             {
