@@ -37,7 +37,7 @@ namespace WorldMapZoom
                 if (File.Exists(defaultPath))
                 {
                     DataLoader.LoadFromJson(defaultPath, _familyTree);
-                    _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} miembros";
+                    _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} familiares";
                 }
             }
             catch (Exception ex)
@@ -64,13 +64,14 @@ namespace WorldMapZoom
 
             _lblTitle = new Label
             {
-                Text = "ÁRBOL GENEALÓGICO",
+                Text = "ÁRBOL\nGENEALÓGICO",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Height = 60,
-                Dock = DockStyle.Top
+                Top = 80,
+                Width = 250
             };
             _sidePanel.Controls.Add(_lblTitle);
 
@@ -82,12 +83,12 @@ namespace WorldMapZoom
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
                 Height = 30,
-                Top = 60,
+                Top = 140,
                 Width = 250
             };
             _sidePanel.Controls.Add(_lblInfo);
 
-            int yPosition = 100;
+            int yPosition = 260;
 
             _btnAddPerson = CreateStyledButton("➕ Agregar Persona", yPosition, Color.FromArgb(46, 204, 113));
             _btnAddPerson.Click += BtnAddPerson_Click;
@@ -248,7 +249,7 @@ namespace WorldMapZoom
             if (addForm.ShowDialog() == DialogResult.OK)
             {
                 RefreshMap();
-                _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} miembros";
+                _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} familiares";
             }
         }
 
@@ -265,7 +266,7 @@ namespace WorldMapZoom
             if (deleteForm.ShowDialog() == DialogResult.OK)
             {
                 RefreshMap();
-                _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} miembros";
+                _lblInfo.Text = $"Cargados: {_familyTree.GetAllMembers().Count} familiares";
             }
         }
 
