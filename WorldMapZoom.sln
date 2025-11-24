@@ -4,6 +4,8 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldMapZoom", "WorldMapZoom.csproj", "{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorldMapZoom.Tests", "WorldMapZoom.Tests\WorldMapZoom.Tests.csproj", "{5FCB2866-2B37-4A4D-82A2-A65E4B92ACA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7ED5EC4E-1A3D-E4C5-D9A7-EBB3CB1322AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FCB2866-2B37-4A4D-82A2-A65E4B92ACA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FCB2866-2B37-4A4D-82A2-A65E4B92ACA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FCB2866-2B37-4A4D-82A2-A65E4B92ACA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FCB2866-2B37-4A4D-82A2-A65E4B92ACA7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
